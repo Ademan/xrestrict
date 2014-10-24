@@ -225,10 +225,24 @@ int main(int argc, char ** argv) {
 			}
 		} else {
 			if (parsing_state == PARSE_DEVICEID) {
-				device_id = atoi(argv[i]);
+				char * invalid;
+				device_id = strtoul(argv[i], &invalid, 10);
+				if (invalid && *invalid != '\0') {
+					fprintf(stderr, "Failed to parse device id \"%s\".\n", argv[i]);
+					print_usage(argv[0]);
+					XCloseDisplay(display);
+					return -1;
+				}
 				parsing_state = PARSE_NONE;
 			} else if (parsing_state == PARSE_CRTCINDEX) {
-				crtc_index = atoi(argv[i]);
+				char * invalid;
+				crtc_index = strtoul(argv[i], &invalid, 10);
+				if (invalid && *invalid != '\0') {
+					fprintf(stderr, "Failed to parse crtc index \"%s\".\n", argv[i]);
+					print_usage(argv[0]);
+					XCloseDisplay(display);
+					return -1;
+				}
 				parsing_state = PARSE_NONE;
 			} else {
 				XCloseDisplay(display);
