@@ -1,0 +1,4 @@
+* Take into account physical size of output
+* Take into account physical size of input
+* Remove dead code
+* Improve command line parsing code
