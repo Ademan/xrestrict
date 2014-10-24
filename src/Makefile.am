@@ -5,6 +5,7 @@ xrestrict_LDADD=$(X11_LIBS) $(XCB_X11_LIBS) $(X11_LIBS) $(XINPUT_LIBS) $(XCB_RAN
 rectest_LDADD=$(X11_LIBS) $(XCB_X11_LIBS) $(X11_LIBS) $(XINPUT_LIBS) $(XCB_RANDR_LIBS)
 
 xrestrict_SOURCES=xrestrict.h xrestrict.c \
-input.h input.c
+input.h input.c \
+display.h display.c
 
 rectest_SOURCES=input.h input.c rectest.c
