@@ -143,7 +143,7 @@ XIDeviceInfo * find_device(Display * display, const XID id) {
 	return found;
 }
 
-void xi2_device_set_matrix(Display * display, const XID id, const float * matrix) {
+int xi2_device_set_matrix(Display * display, const XID id, const float * matrix) {
 	static Atom atoms[2] = {0};
 	static char * names[] = {"Coordinate Transformation Matrix", "FLOAT"};
 
@@ -160,6 +160,7 @@ void xi2_device_set_matrix(Display * display, const XID id, const float * matrix
 			32,
 			PropModeReplace,
 			(char *)matrix, 9);
+	return 0;
 }
 
 int xi2_device_info_find_xy_valuators(Display * display, const XIDeviceInfo * info, ValuatorIndices * valuator_indices) {

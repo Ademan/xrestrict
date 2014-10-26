@@ -210,7 +210,12 @@ int main(int argc, char ** argv) {
 	calc_matrix(device_id, &config, &screen_size, region, &pointer_region, matrix);
 
 	if (!dry_run) {
-		xi2_device_set_matrix(display, device_id, matrix);
+		int set_matrix_results = xi2_device_set_matrix(display, device_id, matrix);
+
+		if (set_matrix_results) {
+			fprintf(stderr, "Failed to set Coordinate Transformation Matrix for device %d.\n", device_id);
+			return -1;
+		}
 
 		// TODO: retrieve matrix and check that the change stuck
 
