@@ -20,8 +20,8 @@ void calculate_coordinate_transform_matrix(const Rectangle * region, const xcb_r
 	float x_scale = RECT_WIDTH(*region) / (float)screen->width;
 	float y_scale = RECT_HEIGHT(*region) / (float)screen->height;
 
-	float x_offset = region->top / (float)screen->width;
-	float y_offset = region->left / (float)screen->height;
+	float x_offset = region->left / (float)screen->width;
+	float y_offset = region->top / (float)screen->height;
 
 	matrix[0] = x_scale;
 	matrix[1] = 0;
@@ -155,11 +155,54 @@ int xi2_device_set_matrix(Display * display, const XID id, const float * matrix)
 
 	XIChangeProperty(display,
 			id,
-			atoms[0], // "Coordiante Transformation Matrix"
+			atoms[0], // "Coordinate Transformation Matrix"
 			atoms[1], // "FLOAT"
 			32,
 			PropModeReplace,
 			(char *)matrix, 9);
+	return 0;
+}
+
+int xi2_device_check_matrix(Display * display, const XID id, const float * matrix) {
+	static Atom atoms[2] = {0};
+	static char * names[] = {"Coordinate Transformation Matrix", "FLOAT"};
+
+	if (atoms[0] == 0 && atoms[1] == 0) {
+		if (!XInternAtoms(display, names, 2, True, atoms)) { // FIXME: test
+			return EINTERN_FAILED; // FIXME: error message
+		}
+	}
+
+	Atom type_return;
+	int format_return;
+	unsigned long num_items_return, bytes_after_return;
+	unsigned char * data;
+	Status result = XIGetProperty(display,
+								  id,
+								  atoms[0],
+								  0, 9 /* Length in 32 bit words */,
+								  False,
+								  atoms[1],
+								  &type_return, &format_return,
+								  &num_items_return, &bytes_after_return,
+								  &data);
+
+	if (result != Success) {
+		return -1; // TODO: select error code
+	} else if (format_return != 32 && num_items_return != 9 && bytes_after_return != 0) {
+		return -1; // TODO: select error code
+	}
+
+	float * retrieved_matrix = (float *)data;
+
+	for (int i = 0; i < 9; i++) {
+		if (retrieved_matrix[i] != matrix[i]) {
+			return -1; // TODO: select error code
+		}
+	}
+
+	XFree(data);
+
 	return 0;
 }
 
