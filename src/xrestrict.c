@@ -56,7 +56,7 @@ int main(int argc, char ** argv) {
 			}
 			if (strcmp(argv[i], "-d") == 0 || strcmp(argv[i], "--device") == 0) {
 				parsing_state = PARSE_DEVICEID;
-			} else if (strcmp(argv[i], "-c") == 0 || strcmp(argv[i], "--crtc")) {
+			} else if (strcmp(argv[i], "-c") == 0 || strcmp(argv[i], "--crtc") == 0) {
 				parsing_state = PARSE_CRTCINDEX;
 			} else if (strcmp(argv[i], "--dry") == 0) {
 				dry_run = true;
@@ -213,13 +213,17 @@ int main(int argc, char ** argv) {
 		int set_matrix_result = xi2_device_set_matrix(display, device_id, matrix);
 
 		if (set_matrix_result) {
+			fprintf(stderr, "Failed to set Coordinate Transformation Matrix of device %d.\n", device_id);
 			return -1;
 		}
+		return 0;
 	} else {
-		printf("%f", matrix[0]);
+		printf("Coordinate Transformation Matrix = %f", matrix[0]);
 		for (float * x = matrix + 1; x < (matrix + 9); x++) {
 			printf(" %f", *x);
 		}
+		printf("\n");
+		return 0;
 	}
 
 	xcb_randr_get_screen_resources_cookie_t screen_resources_cookie = xcb_randr_get_screen_resources(connection, screen->root);
