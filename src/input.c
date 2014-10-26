@@ -100,8 +100,8 @@ void rectangle_align(const Rectangle * reference,
 
 		result->top = reference->top;
 		result->left = reference->left;
-		result->bottom = reference->top + width;
-		result->right = reference->left + height;
+		result->bottom = reference->top + height;
+		result->right = reference->left + width;
 
 		if (affinity->horizontal == HA_Right) {
 			result->left -= x_offset;
