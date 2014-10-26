@@ -143,7 +143,7 @@ XIDeviceInfo * find_device(Display * display, const XID id) {
 	return found;
 }
 
-int xi2_device_set_matrix(Display * display, const XID id, const float * matrix) {
+void xi2_device_set_matrix(Display * display, const XID id, const float * matrix) {
 	static Atom atoms[2] = {0};
 	static char * names[] = {"Coordinate Transformation Matrix", "FLOAT"};
 
