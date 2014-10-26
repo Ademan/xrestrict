@@ -316,3 +316,13 @@ int xi2_pointer_get_next_click(Display * display, const XID deviceid, const Valu
 	
 	return -1;
 }
+
+int xi2_find_containing_crtc(CRTCRegion * regions, const int region_count, const Point * point) {
+	for (CRTCRegion * region = regions; region < (regions + region_count); region++) {
+		if (region->left <= point->x && point->x <= region->right && \
+			region->top <= point->y && point->y <= region->bottom) {
+			return (region - regions);
+		}
+	}
+	return -1;
+}

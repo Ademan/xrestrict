@@ -1,56 +1,34 @@
-#include <unistd.h>
-#include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <stdbool.h>
+#include <string.h>
 #include <limits.h>
+#include <unistd.h>
 #include <X11/Xlib-xcb.h>
+#include <X11/extensions/XInput2.h>
 #include <xcb/randr.h>
 
 #include "input.h"
 #include "display.h"
 #include "xrestrict.h"
-#include <X11/extensions/XInput2.h>
 
 #define INVALID_CRTC_INDEX -1
 #define INVALID_DEVICE_ID -1
 
-int restrict_index(Display * display, const XID deviceid, const CTMConfiguration * config, const xcb_randr_screen_size_t * screen, const CRTCRegion * region) {
-	XIDeviceInfo * device = XIQueryDevice(display, deviceid, CurrentTime);
-	if (!device) {
-		return -1; // TODO: select error code
-	}
-
-	ValuatorIndices valuator_indices;
-	int valuator_result = xi2_device_info_find_xy_valuators(display, device, &valuator_indices);
-	
-	if (valuator_result) {
-		return -1; // TODO: select error code
-	}
-
-	PointerRegion pointer_region;
-	int region_result = xi2_device_get_region(device, &valuator_indices, &pointer_region);
-
-	if (region_result) {
-		return -1; // TODO: select error code
-	}
-
+void calc_matrix(const XID deviceid, const CTMConfiguration * config, const xcb_randr_screen_size_t * screen, const CRTCRegion * region, const PointerRegion * pointer_region, float * matrix) {
 	Rectangle scaled, aligned;
 
-	rectangle_scale_preserve_aspect(region, &pointer_region, config->type, &scaled);
+	rectangle_scale_preserve_aspect(region, pointer_region, config->type, &scaled);
 
 	rectangle_align(region, &scaled, &config->affinity, &aligned);
 
-	float matrix[9] = {0.0};
-
 	calculate_coordinate_transform_matrix(&aligned, screen, matrix);
-
-	int set_matrix_result = xi2_device_set_matrix(display, deviceid, matrix);
 }
 
 void print_usage(char * cmd) {
 	// TODO: would like to eventually allow deviceid discovery
 	//       based on pointer grab
-	fprintf(stderr, "Usage: %s -d DEVICEID [-c CRTCINDEX]\n", cmd);
+	fprintf(stderr, "Usage: %s -d|--device DEVICEID [-c|--crtc CRTCINDEX] [--dry]\n", cmd);
 }
 
 #define PARSE_NONE      0
@@ -63,15 +41,9 @@ int main(int argc, char ** argv) {
 		return -1;
 	}
 
-	Display * display = XOpenDisplay(NULL);
-
-	if (!display) {
-		fprintf(stderr, "Failed to open display.\n");
-		return -1;
-	}
-
 	int device_id = INVALID_DEVICE_ID;
 	int crtc_index = INVALID_CRTC_INDEX;
+	bool dry_run = false;
 
 	// TODO: break out command line parsing into another function
 	//       or use getopt
@@ -79,7 +51,6 @@ int main(int argc, char ** argv) {
 	for (int i = 1; i < argc; i++) {
 		if (argv[i][0] == '-') {
 			if (parsing_state != PARSE_NONE) {
-				XCloseDisplay(display);
 				print_usage(argv[0]);
 				return -1;
 			}
@@ -87,34 +58,32 @@ int main(int argc, char ** argv) {
 				parsing_state = PARSE_DEVICEID;
 			} else if (strcmp(argv[i], "-c") == 0 || strcmp(argv[i], "--crtc")) {
 				parsing_state = PARSE_CRTCINDEX;
+			} else if (strcmp(argv[i], "--dry") == 0) {
+				dry_run = true;
 			} else {
-				XCloseDisplay(display);
 				print_usage(argv[0]);
 				return -1;
 			}
 		} else {
 			if (parsing_state == PARSE_DEVICEID) {
 				char * invalid;
-				device_id = strtoul(argv[i], &invalid, 10);
+				device_id = strtol(argv[i], &invalid, 10);
 				if (invalid && *invalid != '\0') {
 					fprintf(stderr, "Failed to parse device id \"%s\".\n", argv[i]);
 					print_usage(argv[0]);
-					XCloseDisplay(display);
 					return -1;
 				}
 				parsing_state = PARSE_NONE;
 			} else if (parsing_state == PARSE_CRTCINDEX) {
 				char * invalid;
-				crtc_index = strtoul(argv[i], &invalid, 10);
+				crtc_index = strtol(argv[i], &invalid, 10);
 				if (invalid && *invalid != '\0') {
 					fprintf(stderr, "Failed to parse crtc index \"%s\".\n", argv[i]);
 					print_usage(argv[0]);
-					XCloseDisplay(display);
 					return -1;
 				}
 				parsing_state = PARSE_NONE;
 			} else {
-				XCloseDisplay(display);
 				print_usage(argv[0]);
 				return -1;
 			}
@@ -122,8 +91,27 @@ int main(int argc, char ** argv) {
 	}
 
 	if (parsing_state != PARSE_NONE) {
-		XCloseDisplay(display);
 		print_usage(argv[0]);
+		return -1;
+	}
+
+	if (device_id < 0) {
+		fprintf(stderr, "DEVICEID must be a positive integer\n");
+		print_usage(argv[0]);
+		return -1;
+	}
+
+	// FIXME: -1 is our sentinel value. Maybe communicate set/unset state out of band.
+	if (crtc_index < -1) {
+		fprintf(stderr, "CRTCINDEX must be a positive integer\n");
+		print_usage(argv[0]);
+		return -1;
+	}
+
+	Display * display = XOpenDisplay(NULL);
+
+	if (!display) {
+		fprintf(stderr, "Failed to open display.\n");
 		return -1;
 	}
 
@@ -135,11 +123,37 @@ int main(int argc, char ** argv) {
 		return -1;
 	}
 
+	XIDeviceInfo * device;
+	ValuatorIndices valuator_indices;
+	int device_count;
+
+	if (device_id != INVALID_DEVICE_ID) {
+		device = XIQueryDevice(display, device_id, &device_count);
+		if (!device) {
+			XCloseDisplay(display);
+			fprintf(stderr, "Failed to query device %d.\n", device_id);
+			return -1; // TODO: select error code
+		}
+
+		int valuator_result = xi2_device_info_find_xy_valuators(display, device, &valuator_indices);
+		
+		if (valuator_result) {
+			fprintf(stderr, "Failed to find absolute X and Y valuators for device %d.\n", device_id);
+			return -1; // TODO: select error code
+		}
+	} else {
+		fprintf(stderr, "Currently do not support device id discovery, please specify device id with -d.\n");
+		fprintf(stderr, "Device ID may be discovered using the `xinput` utility.\n");
+		return -1;
+
+		// TODO: implement device id discovery integrated with crtc selection
+	}
+
 	xcb_screen_t *screen = xcb_setup_roots_iterator (xcb_get_setup (connection)).data;
 
-	xcb_randr_screen_size_t size;
+	xcb_randr_screen_size_t screen_size;
 
-	if (find_screen_size(connection, screen, &size)) {
+	if (find_screen_size(connection, screen, &screen_size)) {
 		fprintf(stderr, "Failed to find screen size\n");
 		XCloseDisplay(display);
 		return -1;
@@ -171,12 +185,41 @@ int main(int argc, char ** argv) {
 		}
 	};
 
-	//int restrict_result = restrict_index(display, deviceid, &config, screen, crtc_regions + crtc_index);
+	CRTCRegion * region;
 
 	if (crtc_index == INVALID_CRTC_INDEX) {
-		// TODO: implement user-selected CRTC
 		fprintf(stderr, "Interactive selection of CRTC not currently supported.\n");
 		return -1;
+		
+		// TODO: implement user-selected CRTC
+	} else {
+		region = crtc_regions + crtc_index;
+	}
+
+	PointerRegion pointer_region;
+	int region_result = xi2_device_get_region(device, &valuator_indices, &pointer_region);
+
+	if (region_result) {
+		fprintf(stderr, "Failed to retrieve region from device.\n");
+		XCloseDisplay(display);
+		return -1;
+	}
+
+	float matrix[9] = {0.0};
+
+	calc_matrix(device_id, &config, &screen_size, region, &pointer_region, matrix);
+
+	if (!dry_run) {
+		int set_matrix_result = xi2_device_set_matrix(display, device_id, matrix);
+
+		if (set_matrix_result) {
+			return -1;
+		}
+	} else {
+		printf("%f", matrix[0]);
+		for (float * x = matrix + 1; x < (matrix + 9); x++) {
+			printf(" %f", *x);
+		}
 	}
 
 	xcb_randr_get_screen_resources_cookie_t screen_resources_cookie = xcb_randr_get_screen_resources(connection, screen->root);
