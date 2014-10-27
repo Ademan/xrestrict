@@ -2,45 +2,9 @@
 #include <stdio.h>
 #include "display.h"
 
-int find_screen_size(xcb_connection_t * connection, xcb_screen_t * screen, xcb_randr_screen_size_t * size) {
-	xcb_randr_get_screen_info_cookie_t info_cookie = xcb_randr_get_screen_info(connection, screen->root);
-	xcb_randr_get_screen_info_reply_t * info_reply = xcb_randr_get_screen_info_reply(connection, info_cookie, NULL);
-
-	if (!info_reply) {
-		fprintf(stderr, "Screen info request failed.\n");
-		return -1;
-	}
-
-	int screen_size_id = info_reply->sizeID;
-	int screen_size_count = info_reply->nSizes;
-
-	xcb_randr_screen_size_iterator_t screen_iter = xcb_randr_get_screen_info_sizes_iterator (info_reply);
-	xcb_generic_iterator_t screen_iter_end = xcb_randr_screen_size_end (screen_iter);
-
-	int screen_width = INT_MIN;
-	int screen_height = INT_MIN;
-	for (int screen_index = 0;
-			screen_iter.index < screen_iter_end.index;
-			screen_index++, xcb_randr_screen_size_next(&screen_iter)) {
-
-		if (screen_iter.data == NULL) {
-			break;
-		}
-
-		if (screen_index == screen_size_id) {
-			screen_width = screen_iter.data->width;
-			screen_height = screen_iter.data->height;
-			break;
-		}
-	}
-
-	if (screen_width == INT_MIN || screen_height == INT_MIN) {
-		return ESCREEN_SIZE_NOT_FOUND;
-	} else {
-		size->width = screen_width;
-		size->height = screen_height;
-		return 0;
-	}
+void find_screen_size_xlib(Display * display, xcb_randr_screen_size_t * size) {
+	size->width = DisplayWidth(display, DefaultScreen(display));
+	size->height = DisplayHeight(display, DefaultScreen(display));
 }
 
 int get_crtc_regions(xcb_connection_t * connection, xcb_screen_t * screen, CRTCRegion * regions, const int max_regions) {

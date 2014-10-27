@@ -153,11 +153,7 @@ int main(int argc, char ** argv) {
 
 	xcb_randr_screen_size_t screen_size;
 
-	if (find_screen_size(connection, screen, &screen_size)) {
-		fprintf(stderr, "Failed to find screen size\n");
-		XCloseDisplay(display);
-		return -1;
-	}
+	find_screen_size_xlib(display, &screen_size);
 
 	CRTCRegion crtc_regions[10];
 	int region_count = get_crtc_regions(connection, screen, crtc_regions, 10);
@@ -217,9 +213,14 @@ int main(int argc, char ** argv) {
 			return -1;
 		}
 
-		// TODO: retrieve matrix and check that the change stuck
+		set_matrix_results =  xi2_device_check_matrix(display, device_id, matrix);
 
-		return 0;
+		if (set_matrix_results) {
+			fprintf(stderr, "Failed to set Coordinate Transformation Matrix for device %d.\n", device_id);
+			return -1;
+		}
+
+		//return 0;
 	} else {
 		printf("Coordinate Transformation Matrix = %f", matrix[0]);
 		for (float * x = matrix + 1; x < (matrix + 9); x++) {
