@@ -4,11 +4,11 @@ A utility to modify the "Coordinate Transformation Matrix" of an XInput2 device.
 
 ## Basic Usage
 
-    xrestrict -d $DEVICEID -c $CRTCINDEX
+    xrestrict -d $DEVICEID [-c $CRTCINDEX]
 
-DEVICEID is the XInput2 device XID, identical to that reported by `xinput list`
-
-CRTCINDEX is the index in 0..N-1 of the N CRTCs to restrict the pointer device to.
+* `DEVICEID` is the XInput2 device XID, identical to that reported by `xinput list`
+* `CRTCINDEX` is the index in 0..N-1 of the N CRTCs to restrict the pointer device to.
+`CRTCINDEX` defaults to 0.
 For most multi-monitor setups, each non-mirrored CRTC corresponds to a different monitor.
 For most single-monitor setups, there will be only one CRTC which is equal to the size of the virtual screen.
 
