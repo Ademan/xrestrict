@@ -115,14 +115,6 @@ int main(int argc, char ** argv) {
 		return -1;
 	}
 
-	xcb_connection_t * connection = XGetXCBConnection(display);
-
-	if (!connection) {
-		fprintf(stderr, "Failed to open XCB connection.\n");
-		XCloseDisplay(display);
-		return -1;
-	}
-
 	XIDeviceInfo * device;
 	ValuatorIndices valuator_indices;
 	int device_count;
@@ -138,15 +130,25 @@ int main(int argc, char ** argv) {
 		int valuator_result = xi2_device_info_find_xy_valuators(display, device, &valuator_indices);
 		
 		if (valuator_result) {
+			XCloseDisplay(display);
 			fprintf(stderr, "Failed to find absolute X and Y valuators for device %d.\n", device_id);
 			return -1; // TODO: select error code
 		}
 	} else {
+		XCloseDisplay(display);
 		fprintf(stderr, "Currently do not support device id discovery, please specify device id with -d.\n");
 		fprintf(stderr, "Device ID may be discovered using the `xinput` utility.\n");
 		return -1;
 
 		// TODO: implement device id discovery integrated with crtc selection
+	}
+
+	xcb_connection_t * connection = XGetXCBConnection(display);
+
+	if (!connection) {
+		XCloseDisplay(display);
+		fprintf(stderr, "Failed to open XCB connection.\n");
+		return -1;
 	}
 
 	xcb_screen_t *screen = xcb_setup_roots_iterator (xcb_get_setup (connection)).data;
@@ -159,14 +161,14 @@ int main(int argc, char ** argv) {
 	int region_count = get_crtc_regions(connection, screen, crtc_regions, 10);
 
 	if (region_count < 1) {
-		fprintf(stderr, "Failed to retrieve CRTC information.\n");
 		XCloseDisplay(display);
+		fprintf(stderr, "Failed to retrieve CRTC information.\n");
 		return -1;
 	}
 
 	if (crtc_index >= region_count) {
-		fprintf(stderr, "CRTC index %d greater than highest index available %d.\n", crtc_index, region_count - 1);
 		XCloseDisplay(display);
+		fprintf(stderr, "CRTC index %d greater than highest index available %d.\n", crtc_index, region_count - 1);
 		return -1;
 	}
 
@@ -184,6 +186,7 @@ int main(int argc, char ** argv) {
 	CRTCRegion * region;
 
 	if (crtc_index == INVALID_CRTC_INDEX) {
+		XCloseDisplay(display);
 		fprintf(stderr, "Interactive selection of CRTC not currently supported.\n");
 		return -1;
 		
@@ -196,8 +199,8 @@ int main(int argc, char ** argv) {
 	int region_result = xi2_device_get_region(device, &valuator_indices, &pointer_region);
 
 	if (region_result) {
-		fprintf(stderr, "Failed to retrieve region from device.\n");
 		XCloseDisplay(display);
+		fprintf(stderr, "Failed to retrieve region from device.\n");
 		return -1;
 	}
 
@@ -209,6 +212,7 @@ int main(int argc, char ** argv) {
 		int set_matrix_results = xi2_device_set_matrix(display, device_id, matrix);
 
 		if (set_matrix_results) {
+			XCloseDisplay(display);
 			fprintf(stderr, "Failed to set Coordinate Transformation Matrix for device %d.\n", device_id);
 			return -1;
 		}
@@ -216,65 +220,17 @@ int main(int argc, char ** argv) {
 		set_matrix_results =  xi2_device_check_matrix(display, device_id, matrix);
 
 		if (set_matrix_results) {
+			XCloseDisplay(display);
 			fprintf(stderr, "Failed to set Coordinate Transformation Matrix for device %d.\n", device_id);
 			return -1;
 		}
-
-		//return 0;
 	} else {
 		printf("Coordinate Transformation Matrix = %f", matrix[0]);
 		for (float * x = matrix + 1; x < (matrix + 9); x++) {
 			printf(" %f", *x);
 		}
 		printf("\n");
-		return 0;
 	}
 
-	xcb_randr_get_screen_resources_cookie_t screen_resources_cookie = xcb_randr_get_screen_resources(connection, screen->root);
-
-	xcb_randr_get_screen_resources_reply_t * screen_resources = xcb_randr_get_screen_resources_reply(connection,
-			screen_resources_cookie, NULL);
-
-	if (!screen_resources) {
-		fprintf(stderr, "Failed to retrieve screen resources.\n");
-		return -1;
-	}
-
-	xcb_randr_mode_info_t * mode = xcb_randr_get_screen_resources_modes(screen_resources);
-	int mode_count = xcb_randr_get_screen_resources_modes_length(screen_resources);
-	for (int i = 0; i < mode_count; i++, mode++) {
-		printf("mode %d: id=%d %dx%d\n", i, mode->id, mode->width, mode->height);
-	}
-
-	xcb_randr_output_t * output = xcb_randr_get_screen_resources_outputs (screen_resources);
-	int output_count = xcb_randr_get_screen_resources_outputs_length (screen_resources);
-
-	xcb_generic_iterator_t outputs_end = xcb_randr_get_screen_resources_outputs_end(screen_resources);
-
-	printf("Output count: %d\n", output_count);
-
-	for (int i = 0; i < output_count; output++, i++) {
-		//xcb_randr_query_output_property_cookie_t property_cookie = xcb_randr_query_output_property(connection, *output, mode_atom);
-		xcb_randr_get_output_info_cookie_t output_info_cookie = xcb_randr_get_output_info(connection, *output, XCB_CURRENT_TIME);
-
-
-		xcb_randr_get_output_info_reply_t * output_info_reply = xcb_randr_get_output_info_reply(connection, output_info_cookie, NULL);
-
-		if (!output_info_reply) {
-			fprintf(stderr, "Failed to get output info for output %d\n", *output);
-			continue;
-		}
-
-		xcb_randr_mode_t * output_info_mode = xcb_randr_get_output_info_modes(output_info_reply);
-		int output_info_modes_length = xcb_randr_get_output_info_modes_length(output_info_reply);
-
-		printf("Output %d status: %d found %d Modes: ", *output, output_info_reply->status, output_info_modes_length);
-		for (int j = 0; j < output_info_modes_length; j++) {
-			printf("%d ", output_info_mode[j]);
-		}
-		printf("\n");
-	}
-
-	xcb_disconnect(connection);
 	return 0;
 }
