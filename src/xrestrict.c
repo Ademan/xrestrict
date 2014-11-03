@@ -12,7 +12,6 @@
 #include "display.h"
 #include "xrestrict.h"
 
-#define INVALID_CRTC_INDEX -1
 #define INVALID_DEVICE_ID -1
 
 void calc_matrix(const XID deviceid, const CTMConfiguration * config, const xcb_randr_screen_size_t * screen, const CRTCRegion * region, const PointerRegion * pointer_region, float * matrix) {
@@ -42,7 +41,7 @@ int main(int argc, char ** argv) {
 	}
 
 	int device_id = INVALID_DEVICE_ID;
-	int crtc_index = INVALID_CRTC_INDEX;
+	int crtc_index = 0;
 	bool dry_run = false;
 
 	// TODO: break out command line parsing into another function
@@ -97,13 +96,6 @@ int main(int argc, char ** argv) {
 
 	if (device_id < 0) {
 		fprintf(stderr, "DEVICEID must be a positive integer\n");
-		print_usage(argv[0]);
-		return -1;
-	}
-
-	// FIXME: -1 is our sentinel value. Maybe communicate set/unset state out of band.
-	if (crtc_index < -1) {
-		fprintf(stderr, "CRTCINDEX must be a positive integer\n");
 		print_usage(argv[0]);
 		return -1;
 	}
@@ -183,17 +175,7 @@ int main(int argc, char ** argv) {
 		}
 	};
 
-	CRTCRegion * region;
-
-	if (crtc_index == INVALID_CRTC_INDEX) {
-		XCloseDisplay(display);
-		fprintf(stderr, "Interactive selection of CRTC not currently supported.\n");
-		return -1;
-		
-		// TODO: implement user-selected CRTC
-	} else {
-		region = crtc_regions + crtc_index;
-	}
+	CRTCRegion * region = crtc_regions + crtc_index;
 
 	PointerRegion pointer_region;
 	int region_result = xi2_device_get_region(device, &valuator_indices, &pointer_region);
