@@ -147,7 +147,7 @@ int xi2_device_set_matrix(Display * display, const XID id, const float * matrix)
 	static char * names[] = {"Coordinate Transformation Matrix", "FLOAT"};
 
 	if (atoms[0] == 0 && atoms[1] == 0) {
-		if (!XInternAtoms(display, names, 2, True, atoms)) { // FIXME: test
+		if (!XInternAtoms(display, names, 2, True, atoms)) {
 			return EINTERN_FAILED; // FIXME: error message
 		}
 	}
@@ -167,8 +167,8 @@ int xi2_device_check_matrix(Display * display, const XID id, const float * matri
 	static char * names[] = {"Coordinate Transformation Matrix", "FLOAT"};
 
 	if (atoms[0] == 0 && atoms[1] == 0) {
-		if (!XInternAtoms(display, names, 2, True, atoms)) { // FIXME: test
-			return EINTERN_FAILED; // FIXME: error message
+		if (!XInternAtoms(display, names, 2, True, atoms)) {
+			return EINTERN_FAILED;
 		}
 	}
 

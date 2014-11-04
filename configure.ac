@@ -11,7 +11,6 @@ AC_CONFIG_HEADERS([src/config.h])
 AC_PROG_CC
 
 # Checks for libraries.
-# FIXME: XXX
 PKG_CHECK_MODULES(X11, x11)
 PKG_CHECK_MODULES(XRANDR, xrandr)
 PKG_CHECK_MODULES(XINPUT, xext [xi >= 1.2.99.2] [inputproto >= 1.9.99.15])
@@ -22,14 +21,10 @@ AC_SUBST([XRANDR_CFLAGS])
 AC_SUBST([XRANDR_LIBS])
 AC_SUBST([XINPUT_CFLAGS])
 AC_SUBST([XINPUT_LIBS])
-#AC_CHECK_LIB([xlib], []) TODO
-
-# Checks for header files.
 
 # Checks for typedefs, structures, and compiler characteristics.
 AC_C_INLINE
 
 # Checks for library functions.
 
-dnl AC_CONFIG_FILES([src/Makefile])
 AC_OUTPUT(Makefile src/Makefile)
