@@ -2,47 +2,39 @@
 #include <stdio.h>
 #include "display.h"
 
-void find_screen_size_xlib(Display * display, xcb_randr_screen_size_t * size) {
-	size->width = DisplayWidth(display, DefaultScreen(display));
-	size->height = DisplayHeight(display, DefaultScreen(display));
+void xlib_find_screen_size(Display * display, Rectangle * size) {
+	size->top = size->left = 0;
+	size->right = DisplayWidth(display, DefaultScreen(display));
+	size->bottom = DisplayHeight(display, DefaultScreen(display));
 }
 
-int get_crtc_regions(xcb_connection_t * connection, xcb_screen_t * screen, CRTCRegion * regions, const int max_regions) {
-	xcb_randr_get_screen_resources_cookie_t screen_resources_cookie = xcb_randr_get_screen_resources(connection, screen->root);
-
-	xcb_randr_get_screen_resources_reply_t * screen_resources = xcb_randr_get_screen_resources_reply(connection,
-			screen_resources_cookie, NULL);
-
-	CRTCRegion * region = regions;
-	CRTCRegion * regions_end = regions + max_regions;
-
-	if (!screen_resources) {
-		return -1;
-	}
-
-	xcb_randr_crtc_t * crtc = xcb_randr_get_screen_resources_crtcs (screen_resources);
-	int crtc_count = xcb_randr_get_screen_resources_crtcs_length (screen_resources);
-
-	for (int i = 0; i < crtc_count; i++, crtc++) {
-		if (region >= regions_end) {
+int xlib_get_crtc_regions(Display * display, XRRScreenResources * resources, CRTCRegion * regions, const int max_regions) {
+	const CRTCRegion * regions_end = regions + max_regions;
+	const RRCrtc * crtcs_end = resources->crtcs + resources->ncrtc;
+	RRCrtc * crtc;
+	for (crtc = resources->crtcs; crtc < crtcs_end; crtc++) {
+		if (regions >= regions_end) {
 			return EREGIONS_OVERFLOW;
 		}
 
-		xcb_randr_get_crtc_info_cookie_t crtc_info_cookie = xcb_randr_get_crtc_info (connection, *crtc, XCB_CURRENT_TIME);
-		xcb_randr_get_crtc_info_reply_t * crtc_reply = xcb_randr_get_crtc_info_reply (connection, crtc_info_cookie, NULL);
-
-		if (crtc_reply) {
-#			if DEBUG
-					printf("%d(%dx%d)+(%d,%d) mode=%d ", *crtc, crtc_reply->width, crtc_reply->height, crtc_reply->x, crtc_reply->y, crtc_reply->mode);
-#			endif
-			if (crtc_reply->width > 0 && crtc_reply->height > 0) {
-				region->top = crtc_reply->y;
-				region->left = crtc_reply->x;
-				region->bottom = crtc_reply->y + crtc_reply->height;
-				region->right = crtc_reply->x + crtc_reply->width;
-				region++;
-			}
+		XRRCrtcInfo * crtc_info = XRRGetCrtcInfo(display, resources, *crtc);
+		if (!crtc_info) {
+			return -1; // FIXME: select error code
 		}
+
+		if (crtc_info->noutput < 1) {
+			continue; // We only care about crtcs that are actually being displayed
+		}
+
+		regions->top = crtc_info->y;
+		regions->left = crtc_info->x;
+		regions->bottom = crtc_info->y + crtc_info->height;
+		regions->right = crtc_info->x + crtc_info->width;
+		regions++;
+#		if DEBUG
+			printf("%d(%dx%d)+(%d,%d) mode=%d\n", *crtc, crtc_info->width, crtc_info->height, crtc_info->x, crtc_info->y, crtc_info->mode);
+#		endif
+		XRRFreeCrtcInfo(crtc_info);
 	}
-	return region - regions;
+	return crtc - resources->crtcs;
 }

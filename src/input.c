@@ -1,5 +1,4 @@
 #include <stdio.h>
-#include <X11/Xlib-xcb.h>
 #include <stdbool.h>
 #include "input.h"
 
@@ -16,12 +15,12 @@ static const CTMConfiguration default_config = {
 	}
 };
 
-void calculate_coordinate_transform_matrix(const Rectangle * region, const xcb_randr_screen_size_t * screen, float * matrix) {
-	float x_scale = RECT_WIDTH(*region) / (float)screen->width;
-	float y_scale = RECT_HEIGHT(*region) / (float)screen->height;
+void calculate_coordinate_transform_matrix(const Rectangle * region, const Rectangle * screen_size, float * matrix) {
+	float x_scale = RECT_WIDTH(*region) / (float)RECT_WIDTH(*screen_size);
+	float y_scale = RECT_HEIGHT(*region) / (float)RECT_HEIGHT(*screen_size);
 
-	float x_offset = region->left / (float)screen->width;
-	float y_offset = region->top / (float)screen->height;
+	float x_offset = region->left / (float)RECT_WIDTH(*screen_size);
+	float y_offset = region->top / (float)RECT_HEIGHT(*screen_size);
 
 	matrix[0] = x_scale;
 	matrix[1] = 0;

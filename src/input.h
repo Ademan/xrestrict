@@ -1,8 +1,7 @@
 #ifndef XRESTRICT_INPUT_H_
 #define XRESTRICT_INPUT_H_
 
-#include <X11/Xlib-xcb.h>
-#include <xcb/randr.h>
+#include <X11/Xlib.h>
 #include <X11/extensions/XInput2.h>
 
 #include "xrestrict.h"
@@ -47,7 +46,7 @@ float rectangle_select_ratio_preserve_aspect(const Rectangle * target,
 
 float rectangle_scale_preserve_aspect(const Rectangle * target, const Rectangle * original, const CTMAspectPreserveType type, Rectangle * result);
 
-void calculate_coordinate_transform_matrix(const Rectangle * region, const xcb_randr_screen_size_t * screen, float * matrix);
+void calculate_coordinate_transform_matrix(const Rectangle * region, const Rectangle * screen_size, float * matrix);
 
 int xi2_device_info_find_xy_valuators(Display * display, const XIDeviceInfo * info, ValuatorIndices * valuator_indices);
 int xi2_device_get_region(XIDeviceInfo * device, const ValuatorIndices * valuator_indices, PointerRegion * region);

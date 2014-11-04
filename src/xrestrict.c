@@ -4,9 +4,9 @@
 #include <string.h>
 #include <limits.h>
 #include <unistd.h>
-#include <X11/Xlib-xcb.h>
+#include <X11/Xlib.h>
 #include <X11/extensions/XInput2.h>
-#include <xcb/randr.h>
+#include <X11/extensions/Xrandr.h>
 
 #include "input.h"
 #include "display.h"
@@ -14,14 +14,14 @@
 
 #define INVALID_DEVICE_ID -1
 
-void calc_matrix(const XID deviceid, const CTMConfiguration * config, const xcb_randr_screen_size_t * screen, const CRTCRegion * region, const PointerRegion * pointer_region, float * matrix) {
+void calc_matrix(const XID deviceid, const CTMConfiguration * config, Rectangle * screen_size, const CRTCRegion * region, const PointerRegion * pointer_region, float * matrix) {
 	Rectangle scaled, aligned;
 
 	rectangle_scale_preserve_aspect(region, pointer_region, config->type, &scaled);
 
 	rectangle_align(region, &scaled, &config->affinity, &aligned);
 
-	calculate_coordinate_transform_matrix(&aligned, screen, matrix);
+	calculate_coordinate_transform_matrix(&aligned, screen_size, matrix);
 }
 
 void print_usage(char * cmd) {
@@ -135,26 +135,26 @@ int main(int argc, char ** argv) {
 		// TODO: implement device id discovery integrated with crtc selection
 	}
 
-	xcb_connection_t * connection = XGetXCBConnection(display);
+	Rectangle screen_size;
 
-	if (!connection) {
+	xlib_find_screen_size(display, &screen_size);
+
+	CRTCRegion crtc_regions[10];
+	XRRScreenResources * resources = XRRGetScreenResourcesCurrent(display, DefaultRootWindow(display));
+
+	if (!resources) {
 		XCloseDisplay(display);
-		fprintf(stderr, "Failed to open XCB connection.\n");
+		fprintf(stderr, "Failed to retrieve screen resources for monitor information.\n");
 		return -1;
 	}
 
-	xcb_screen_t *screen = xcb_setup_roots_iterator (xcb_get_setup (connection)).data;
+	int region_count = xlib_get_crtc_regions(display, resources, crtc_regions, 10);
 
-	xcb_randr_screen_size_t screen_size;
+	XRRFreeScreenResources(resources);
 
-	find_screen_size_xlib(display, &screen_size);
-
-	CRTCRegion crtc_regions[10];
-	int region_count = get_crtc_regions(connection, screen, crtc_regions, 10);
-
-	if (region_count < 1) {
+	if (region_count < 0) {
 		XCloseDisplay(display);
-		fprintf(stderr, "Failed to retrieve CRTC information.\n");
+		fprintf(stderr, "Failed to retrieve crtc region information.\n");
 		return -1;
 	}
 
