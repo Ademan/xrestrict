@@ -43,9 +43,6 @@ void rectangle_scale(const Rectangle * rectangle, const float x, const float y, 
 }
 
 float rectangle_select_ratio_preserve_aspect(const Rectangle * target, const Rectangle * original, const CTMAspectPreserveType type) {
-	int target_width = RECT_WIDTH(*target);
-	int target_height = RECT_HEIGHT(*target);
-
 	float horizontal_ratio = (float)RECT_WIDTH(*target) / RECT_WIDTH(*original);
 	float vertical_ratio = (float)RECT_HEIGHT(*target) / RECT_HEIGHT(*original);
 
@@ -158,7 +155,7 @@ int xi2_device_set_matrix(Display * display, const XID id, const float * matrix)
 			atoms[1], // "FLOAT"
 			32,
 			PropModeReplace,
-			(char *)matrix, 9);
+			(unsigned char *)matrix, 9);
 	return 0;
 }
 

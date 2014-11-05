@@ -51,6 +51,7 @@ void calculate_coordinate_transform_matrix(const Rectangle * region, const Recta
 int xi2_device_info_find_xy_valuators(Display * display, const XIDeviceInfo * info, ValuatorIndices * valuator_indices);
 int xi2_device_get_region(XIDeviceInfo * device, const ValuatorIndices * valuator_indices, PointerRegion * region);
 int xi2_device_set_matrix(Display * display, const XID id, const float * matrix);
+int xi2_device_check_matrix(Display * display, const XID id, const float * matrix);
 
 int xi2_pointer_get_next_click(Display * display, const XID deviceid, const ValuatorIndices * valuator_indices, Point * point);
 
