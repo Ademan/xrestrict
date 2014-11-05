@@ -27,7 +27,7 @@ void calc_matrix(const XID deviceid, const CTMConfiguration * config, Rectangle 
 void print_usage(char * cmd) {
 	// TODO: would like to eventually allow deviceid discovery
 	//       based on pointer grab
-	fprintf(stderr, "Usage: %s -d|--device DEVICEID [-c|--crtc CRTCINDEX] [--dry]\n", cmd);
+	fprintf(stderr, "Usage: %s -d|--device DEVICEID [-c|--crtc CRTCINDEX][-f|--full] [--dry]\n", cmd);
 }
 
 #define PARSE_NONE      0
@@ -43,6 +43,7 @@ int main(int argc, char ** argv) {
 	int device_id = INVALID_DEVICE_ID;
 	int crtc_index = 0;
 	bool dry_run = false;
+	bool full_screen = false;
 
 	// TODO: break out command line parsing into another function
 	//       or use getopt
@@ -59,6 +60,8 @@ int main(int argc, char ** argv) {
 				parsing_state = PARSE_CRTCINDEX;
 			} else if (strcmp(argv[i], "--dry") == 0) {
 				dry_run = true;
+			} else if (strcmp(argv[i], "-f") == 0 || strcmp(argv[i], "--full") == 0) {
+				full_screen = true;
 			} else {
 				print_usage(argv[0]);
 				return -1;
@@ -175,7 +178,13 @@ int main(int argc, char ** argv) {
 		}
 	};
 
-	CRTCRegion * region = crtc_regions + crtc_index;
+	CRTCRegion * region;
+   
+	if (full_screen) {
+		region = &screen_size;
+	} else {
+		region = crtc_regions + crtc_index;
+	}
 
 	PointerRegion pointer_region;
 	int region_result = xi2_device_get_region(device, &valuator_indices, &pointer_region);
