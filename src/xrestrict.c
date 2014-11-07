@@ -34,6 +34,11 @@ void print_usage(char * cmd) {
 	fprintf(stderr, "\t\t\t\tThe CRTC to restrict the device to.\n");
 	fprintf(stderr, "\t-f, --full\t\tUse the full screen area.\n");
 	fprintf(stderr, "\t--dry\t\t\tOutput the \"Coordinate Transformation Matrix\" instead of setting it.\n");
+	fprintf(stderr, "\nAlignment Control:\n");
+	fprintf(stderr, "\t-t, --top\t\tAlign input region to top of screen (Default).\n");
+	fprintf(stderr, "\t-l, --left\t\tAlign input region to left of screen (Default).\n");
+	fprintf(stderr, "\t-b, --bottom\t\tAlign input region to bottom of screen.\n");
+	fprintf(stderr, "\t-r, --right\t\tAlign input region to right of screen.\n");
 }
 
 #define PARSE_NONE      0
@@ -50,6 +55,15 @@ int main(int argc, char ** argv) {
 	int crtc_index = 0;
 	bool dry_run = false;
 	bool full_screen = false;
+
+	// TODO: pull type from command line
+	CTMConfiguration config = {
+		.type = CTM_Fit,
+		.affinity = {
+			.vertical = VA_Top,
+			.horizontal = HA_Left
+		}
+	};
 
 	// TODO: break out command line parsing into another function
 	//       or use getopt
@@ -68,6 +82,14 @@ int main(int argc, char ** argv) {
 				dry_run = true;
 			} else if (strcmp(argv[i], "-f") == 0 || strcmp(argv[i], "--full") == 0) {
 				full_screen = true;
+			} else if (strcmp(argv[i], "-t") == 0 || strcmp(argv[i], "--top") == 0) {
+				config.affinity.vertical = VA_Top;
+			} else if (strcmp(argv[i], "-b") == 0 || strcmp(argv[i], "--bottom") == 0) {
+				config.affinity.vertical = VA_Bottom;
+			} else if (strcmp(argv[i], "-l") == 0 || strcmp(argv[i], "--left") == 0) {
+				config.affinity.horizontal = HA_Left;
+			} else if (strcmp(argv[i], "-r") == 0 || strcmp(argv[i], "--right") == 0) {
+				config.affinity.horizontal = HA_Right;
 			} else {
 				print_usage(argv[0]);
 				return -1;
@@ -174,15 +196,6 @@ int main(int argc, char ** argv) {
 	}
 
 	//TODO: sort crtcs?
-
-	// TODO: pull config from command line
-	CTMConfiguration config = {
-		.type = CTM_Fit,
-		.affinity = {
-			.vertical = VA_Top,
-			.horizontal = HA_Left
-		}
-	};
 
 	CRTCRegion * region;
    

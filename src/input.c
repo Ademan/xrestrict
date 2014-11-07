@@ -92,7 +92,7 @@ void rectangle_align(const Rectangle * reference,
 		result->right = left + width;
 	} else {
 		int x_offset = (width - RECT_WIDTH(*reference));
-		int y_offset = (height - RECT_WIDTH(*reference));
+		int y_offset = (height - RECT_HEIGHT(*reference));
 
 		result->top = reference->top;
 		result->left = reference->left;
