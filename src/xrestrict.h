@@ -14,11 +14,6 @@ typedef struct Rectangle {
 #define RECT_HEIGHT(region) ((region).bottom - (region).top)
 
 typedef struct Rectangle CRTCRegion;
-typedef struct Rectangle PointerRegion;
-
-typedef struct ValuatorIndices {
-	int x, y;
-} ValuatorIndices;
 
 // Double due to uncertainty about valuator values
 typedef struct Point {

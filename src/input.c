@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdbool.h>
 #include "input.h"
+#include <X11/cursorfont.h>
 
 void calculate_coordinate_transform_matrix(const Rectangle * region, const Rectangle * screen_size, float * matrix) {
 	float x_scale = RECT_WIDTH(*region) / (float)RECT_WIDTH(*screen_size);
@@ -261,19 +262,21 @@ int xi2_read_point(const XIValuatorState * valuators, const ValuatorIndices * va
 	}
 }
 
-int xi2_pointer_get_next_click(Display * display, const XID deviceid, const ValuatorIndices * valuator_indices, Point * point) {
+int xi2_pointer_get_next_click(Display * display, XID * deviceid, Point * point) {
 	XIEventMask mask;
 	unsigned char mask_data[4] = {0};
-	mask.deviceid = deviceid;
+	mask.deviceid = *deviceid;
 	mask.mask_len = 1;
 	XISetMask(mask_data, XI_Motion);
 	XISetMask(mask_data, XI_ButtonRelease);
 	mask.mask = mask_data;
 
-	Status grab_result = XIGrabDevice(display, deviceid,
+	Cursor cross = XCreateFontCursor(display, XC_crosshair);
+
+	Status grab_result = XIGrabDevice(display, *deviceid,
 		 DefaultRootWindow(display),
 		 CurrentTime,
-		 None, /* cursor */
+		 cross, /* cursor */
 		 XIGrabModeAsync, /* XXX: might not want this */
 		 XIGrabModeAsync, /* XXX: paired_device_mode: might not want this */
 		 XINoOwnerEvents, /* XXX: not sure */
@@ -295,36 +298,68 @@ int xi2_pointer_get_next_click(Display * display, const XID deviceid, const Valu
 	XEvent event;
 	XGenericEventCookie *cookie = (XGenericEventCookie*)&event.xcookie;
 
-	Point temp_point = {0, 0};
-	bool  have_point = false;
-
 	while (true) {
 		if (XNextEvent(display, (XEvent *)&event) != Success) {
 			return -1; // TODO: Specific return value
 		}
 		if (XGetEventData(display, cookie)) {
 			if (cookie->type == GenericEvent) {
-				if (cookie->evtype == XI_Motion) {
+				if (cookie->evtype == XI_ButtonRelease) {
 					XIDeviceEvent * device_event = (XIDeviceEvent *)cookie->data;
 
-					have_point |= xi2_read_point(&device_event->valuators, valuator_indices, &temp_point) == 0;
-				} else if (cookie->evtype == XI_ButtonRelease) {
-					XIDeviceEvent * device_event = (XIDeviceEvent *)cookie->data;
+					XIUngrabDevice(display, *deviceid, CurrentTime);
 
-					have_point |= xi2_read_point(&device_event->valuators, valuator_indices, &temp_point) == 0;
-					XIUngrabDevice(display, deviceid, CurrentTime);
-
-					if (have_point) {
-						*point = temp_point;
-						return 0;
-					} else {
-						return -1; // TODO: specific failure code
-					}
+					point->x = device_event->root_x;
+					point->y = device_event->root_y;
+					*deviceid = device_event->sourceid;
+					return 0;
 				}
 			}
 			XFreeEventData(display, cookie);
 		}
 	}
 	
+	return -1;
+}
+
+int xi2_find_master_pointers(XIDeviceInfo * info, const XIDeviceInfo * info_end, XID * pointers, const int max_pointers) {
+	const XID * pointers_base = pointers;
+	const XID * pointers_end = pointers + max_pointers;
+
+	for (; info < info_end; info++) {
+		if (info->use == XIMasterPointer) {
+			if (pointers >= pointers_end) {
+				return EMASTER_POINTERS_OVERFLOW;
+			}
+
+			*pointers = info->deviceid;
+			pointers++;
+		}
+	}
+	return pointers - pointers_base;
+}
+
+int xi2_query_master_pointers(Display * display,  XID * pointers, const int max_pointers) {
+	int device_count = 0;
+	XIDeviceInfo * info = XIQueryDevice(display, XIAllDevices, &device_count);
+
+	if (!info) {
+		return EDEVICE_QUERY_FAILED;
+	}
+
+	const XIDeviceInfo * info_end = info + device_count;
+	int result = xi2_find_master_pointers(info, info_end, pointers, max_pointers);
+
+	XFree(info); // FIXME: ensure freeing devices correctly
+	return result;
+}
+
+int xi2_find_containing_crtc(CRTCRegion * regions, const int region_count, const Point * point) {
+	for (CRTCRegion * region = regions; region < (regions + region_count); region++) {
+		if (region->left <= point->x && point->x <= region->right && \
+			region->top <= point->y && point->y <= region->bottom) {
+			return (region - regions);
+		}
+	}
 	return -1;
 }

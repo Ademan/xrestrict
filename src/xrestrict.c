@@ -50,7 +50,7 @@ void print_usage(char * cmd) {
 #define PARSE_CRTCINDEX 2
 
 int main(int argc, char ** argv) {
-	if (argc < 3) {
+	if (argc < 2) {
 		print_usage(argv[0]);
 		return -1;
 	}
@@ -59,6 +59,7 @@ int main(int argc, char ** argv) {
 	int crtc_index = 0;
 	bool dry_run = false;
 	bool full_screen = false;
+	bool interactive = false;
 
 	// TODO: pull type from command line
 	CTMConfiguration config = {
@@ -100,6 +101,8 @@ int main(int argc, char ** argv) {
 				config.type = CTM_MatchWidth;
 			} else if (strcmp(argv[i], "-H") == 0 || strcmp(argv[i], "--match-height") == 0) {
 				config.type = CTM_MatchHeight;
+			} else if (strcmp(argv[i], "-i") == 0 || strcmp(argv[i], "--interactive") == 0) {
+				interactive = true;
 			} else {
 				print_usage(argv[0]);
 				return -1;
@@ -135,12 +138,6 @@ int main(int argc, char ** argv) {
 		return -1;
 	}
 
-	if (device_id < 0) {
-		fprintf(stderr, "DEVICEID must be a positive integer\n");
-		print_usage(argv[0]);
-		return -1;
-	}
-
 	Display * display = XOpenDisplay(NULL);
 
 	if (!display) {
@@ -148,54 +145,93 @@ int main(int argc, char ** argv) {
 		return -1;
 	}
 
-	XIDeviceInfo * device;
-	ValuatorIndices valuator_indices;
-	int device_count;
-
-	if (device_id != INVALID_DEVICE_ID) {
-		device = XIQueryDevice(display, device_id, &device_count);
-		if (!device) {
-			XCloseDisplay(display);
-			fprintf(stderr, "Failed to query device %d.\n", device_id);
-			return -1; // TODO: select error code
-		}
-
-		int valuator_result = xi2_device_info_find_xy_valuators(display, device, &valuator_indices);
-		
-		if (valuator_result) {
-			XCloseDisplay(display);
-			fprintf(stderr, "Failed to find absolute X and Y valuators for device %d.\n", device_id);
-			return -1; // TODO: select error code
-		}
-	} else {
-		XCloseDisplay(display);
-		fprintf(stderr, "Currently do not support device id discovery, please specify device id with -d.\n");
-		fprintf(stderr, "Device ID may be discovered using the `xinput` utility.\n");
-		return -1;
-
-		// TODO: implement device id discovery integrated with crtc selection
-	}
-
 	Rectangle screen_size;
 
 	xlib_find_screen_size(display, &screen_size);
 
 	CRTCRegion crtc_regions[10];
+
 	XRRScreenResources * resources = XRRGetScreenResourcesCurrent(display, DefaultRootWindow(display));
+	int region_count = xlib_get_crtc_regions(display, resources, crtc_regions, 10);
 
 	if (!resources) {
 		XCloseDisplay(display);
 		fprintf(stderr, "Failed to retrieve screen resources for monitor information.\n");
 		return -1;
 	}
-
-	int region_count = xlib_get_crtc_regions(display, resources, crtc_regions, 10);
-
 	XRRFreeScreenResources(resources);
 
 	if (region_count < 0) {
 		XCloseDisplay(display);
 		fprintf(stderr, "Failed to retrieve crtc region information.\n");
+		return -1;
+	}
+
+	ValuatorIndices valuator_indices = {0};
+	int device_count;
+
+	if (interactive) {
+		// FIXME: we don't actually handle MPX
+		XID pointerid = 0;
+		int device_count = 0;
+
+		XIDeviceInfo * info = XIQueryDevice(display, XIAllDevices, &device_count);
+
+		if (!info) {
+			XCloseDisplay(display);
+			fprintf(stderr, "Failed to query input devices.\n");
+			return -1;
+		}
+
+		const XIDeviceInfo * info_end = info + device_count;
+
+		if (xi2_find_master_pointers(info, info_end, &pointerid, 1) < 0) {
+			XCloseDisplay(display);
+			fprintf(stderr, "xrestrict only functions correctly in single master pointer environments.\n");
+			return -1;
+		}
+
+		XIFreeDeviceInfo(info);
+
+		Point point;
+
+		printf("Please use the device you wish to configure, and click on the monitor you wish to use.\n");
+		if (xi2_pointer_get_next_click(display, &pointerid, &point)) {
+			XCloseDisplay(display);
+			fprintf(stderr, "Failed to use pointer grab to determine CRTC and device id.\n");
+			return -1;
+		}
+
+		crtc_index = xi2_find_containing_crtc(crtc_regions, region_count, &point);
+		if (crtc_index < 0) {
+			XCloseDisplay(display);
+			fprintf(stderr, "Click not in recognized CRTC.\n");
+			return -1;
+		}
+
+		if (device_id == INVALID_DEVICE_ID) {
+			device_id = pointerid;
+		}
+	}
+
+	if (device_id < 0) {
+		fprintf(stderr, "DEVICEID must be a positive integer\n");
+		print_usage(argv[0]);
+		return -1;
+	}
+
+	XIDeviceInfo * device = XIQueryDevice(display, device_id, &device_count);
+	if (!device) {
+		XCloseDisplay(display);
+		fprintf(stderr, "Failed to query device %d.\n", device_id);
+		return -1;
+	}
+
+	int valuator_result = xi2_device_info_find_xy_valuators(display, device, &valuator_indices);
+	
+	if (valuator_result) {
+		XCloseDisplay(display);
+		fprintf(stderr, "Failed to find absolute X and Y valuators for device %d.\n", device_id);
 		return -1;
 	}
 

@@ -35,6 +35,22 @@ typedef struct CTMConfiguration {
 	CTMAffinity			  affinity;
 } CTMConfiguration;
 
+typedef struct DeviceIdentifier {
+	int vendor;
+	int product;
+} DeviceIdentifier;
+
+typedef struct Rectangle PointerRegion;
+
+typedef struct ValuatorIndices {
+	int x, y;
+} ValuatorIndices;
+
+typedef struct AbsolutePointer {
+	XID				id;
+	ValuatorIndices	valuators;
+} AbsolutePointer;
+
 void rectangle_align(const Rectangle * reference,
 					  const Rectangle * alignee,
 					  const CTMAffinity * affinity,
@@ -53,15 +69,18 @@ int xi2_device_get_region(XIDeviceInfo * device, const ValuatorIndices * valuato
 int xi2_device_set_matrix(Display * display, const XID id, const float * matrix);
 int xi2_device_check_matrix(Display * display, const XID id, const float * matrix);
 
-int xi2_pointer_get_next_click(Display * display, const XID deviceid, const ValuatorIndices * valuator_indices, Point * point);
+int xi2_pointer_get_next_click(Display * display, XID * deviceid, Point * point);
 
 // Error codes for xi2_...
 #define EGET_PROPERTY_FAILED (-2)
 #define ESET_PROPERTY_FAILED (-4)
 
 // Error codes for xi2_device_get_region();
-#define EINTERN_FAILED (-1)
-#define EDEVICE_QUERY_FAILED (-2)
-#define EDEVICE_NO_ABS_AXES (-4)
+#define EINTERN_FAILED (-8)
+#define EDEVICE_QUERY_FAILED (-16)
+#define EDEVICE_NO_ABS_AXES (-32)
+#define EMASTER_POINTERS_OVERFLOW (-64)
+#define EABSOLUTE_POINTERS_OVERFLOW (-128)
+#define EDEVICES_OVERFLOW (-256)
 
 #endif /* XRESTRICT_INPUT_H_ */
