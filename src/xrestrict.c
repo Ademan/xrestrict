@@ -39,6 +39,10 @@ void print_usage(char * cmd) {
 	fprintf(stderr, "\t-l, --left\t\tAlign input region to left of screen (Default).\n");
 	fprintf(stderr, "\t-b, --bottom\t\tAlign input region to bottom of screen.\n");
 	fprintf(stderr, "\t-r, --right\t\tAlign input region to right of screen.\n");
+	fprintf(stderr, "\nScaling Control:\n");
+	fprintf(stderr, "\t-w, --match-width\tScale input region to match width of target region.\n");
+	fprintf(stderr, "\t-H, --match-height\tScale input region to match height of target region.\n");
+	fprintf(stderr, "\t--fit\t\t\tScale input region to completely contain target region (Default).\n");
 }
 
 #define PARSE_NONE      0
@@ -90,6 +94,12 @@ int main(int argc, char ** argv) {
 				config.affinity.horizontal = HA_Left;
 			} else if (strcmp(argv[i], "-r") == 0 || strcmp(argv[i], "--right") == 0) {
 				config.affinity.horizontal = HA_Right;
+			} else if (strcmp(argv[i], "--fit") == 0) {
+				config.type = CTM_Fit;
+			} else if (strcmp(argv[i], "-w") == 0 || strcmp(argv[i], "--match-width") == 0) {
+				config.type = CTM_MatchWidth;
+			} else if (strcmp(argv[i], "-H") == 0 || strcmp(argv[i], "--match-height") == 0) {
+				config.type = CTM_MatchHeight;
 			} else {
 				print_usage(argv[0]);
 				return -1;
