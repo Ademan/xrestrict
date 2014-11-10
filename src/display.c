@@ -38,3 +38,13 @@ int xlib_get_crtc_regions(Display * display, XRRScreenResources * resources, CRT
 	}
 	return crtc - resources->crtcs;
 }
+
+int find_containing_crtc(CRTCRegion * regions, const int region_count, const Point * point) {
+	for (CRTCRegion * region = regions; region < (regions + region_count); region++) {
+		if (region->left <= point->x && point->x <= region->right && \
+			region->top <= point->y && point->y <= region->bottom) {
+			return (region - regions);
+		}
+	}
+	return -1;
+}

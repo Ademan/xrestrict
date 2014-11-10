@@ -2,19 +2,6 @@
 #include <stdbool.h>
 #include "input.h"
 
-static const CTMAffinity default_affinity = {
-	.horizontal = HA_Left,
-	.vertical = VA_Top
-};
-
-static const CTMConfiguration default_config = {
-	.type = CTM_MatchWidth,
-	.affinity = {
-		.horizontal = HA_Left,
-		.vertical = VA_Top
-	}
-};
-
 void calculate_coordinate_transform_matrix(const Rectangle * region, const Rectangle * screen_size, float * matrix) {
 	float x_scale = RECT_WIDTH(*region) / (float)RECT_WIDTH(*screen_size);
 	float y_scale = RECT_HEIGHT(*region) / (float)RECT_HEIGHT(*screen_size);
@@ -117,42 +104,32 @@ void rectangle_align(const Rectangle * reference,
 	}
 }
 
-XIDeviceInfo * find_device(Display * display, const XID id) {
-    XIDeviceInfo *info;
-    XIDeviceInfo *found = NULL;
-    int ndevices;
+static Atom coordinate_transformation_matrix_atom=0;
+static Atom FLOAT_atom=0;
 
-	XIQueryDevice(display, id, &ndevices);
-
-    for(int i = 0; i < ndevices; i++)
-    {
-        if (info[i].deviceid == id) {
-			if (found) {
-				// Found duplicate
-				XIFreeDeviceInfo(info);
-				return NULL;
-			}
-		} else {
-			found = &info[i];
-		}
-	}
-	return found;
-}
-
-int xi2_device_set_matrix(Display * display, const XID id, const float * matrix) {
+int intern_atoms(Display * display) {
 	static Atom atoms[2] = {0};
 	static char * names[] = {"Coordinate Transformation Matrix", "FLOAT"};
 
-	if (atoms[0] == 0 && atoms[1] == 0) {
+	if (coordinate_transformation_matrix_atom == 0 && FLOAT_atom == 0) {
 		if (!XInternAtoms(display, names, 2, True, atoms)) {
-			return EINTERN_FAILED; // FIXME: error message
+			return EINTERN_FAILED;
 		}
+		coordinate_transformation_matrix_atom = atoms[0];
+		FLOAT_atom = atoms[1];
+	}
+	return 0;
+}
+
+int xi2_device_set_matrix(Display * display, const XID id, const float * matrix) {
+	if (intern_atoms(display)) {
+		return EINTERN_FAILED;
 	}
 
 	XIChangeProperty(display,
 			id,
-			atoms[0], // "Coordinate Transformation Matrix"
-			atoms[1], // "FLOAT"
+			coordinate_transformation_matrix_atom, // "Coordinate Transformation Matrix"
+			FLOAT_atom, // "FLOAT"
 			32,
 			PropModeReplace,
 			(unsigned char *)matrix, 9);
@@ -160,13 +137,8 @@ int xi2_device_set_matrix(Display * display, const XID id, const float * matrix)
 }
 
 int xi2_device_check_matrix(Display * display, const XID id, const float * matrix) {
-	static Atom atoms[2] = {0};
-	static char * names[] = {"Coordinate Transformation Matrix", "FLOAT"};
-
-	if (atoms[0] == 0 && atoms[1] == 0) {
-		if (!XInternAtoms(display, names, 2, True, atoms)) {
-			return EINTERN_FAILED;
-		}
+	if (intern_atoms(display)) {
+		return EINTERN_FAILED;
 	}
 
 	Atom type_return;
@@ -175,10 +147,10 @@ int xi2_device_check_matrix(Display * display, const XID id, const float * matri
 	unsigned char * data;
 	Status result = XIGetProperty(display,
 								  id,
-								  atoms[0],
+								  coordinate_transformation_matrix_atom,
 								  0, 9 /* Length in 32 bit words */,
 								  False,
-								  atoms[1],
+								  FLOAT_atom,
 								  &type_return, &format_return,
 								  &num_items_return, &bytes_after_return,
 								  &data);
@@ -354,15 +326,5 @@ int xi2_pointer_get_next_click(Display * display, const XID deviceid, const Valu
 		}
 	}
 	
-	return -1;
-}
-
-int xi2_find_containing_crtc(CRTCRegion * regions, const int region_count, const Point * point) {
-	for (CRTCRegion * region = regions; region < (regions + region_count); region++) {
-		if (region->left <= point->x && point->x <= region->right && \
-			region->top <= point->y && point->y <= region->bottom) {
-			return (region - regions);
-		}
-	}
 	return -1;
 }
