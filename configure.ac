@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ([2.68])
-AC_INIT([xrestrict], [0.7.1], [ademan555@gmail.com])
+AC_INIT([xrestrict], [0.8.1], [ademan555@gmail.com])
 AC_CONFIG_SRCDIR([src/xrestrict.c])
 AC_CONFIG_HEADERS([src/config.h])
 AM_INIT_AUTOMAKE
