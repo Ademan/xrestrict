@@ -28,10 +28,14 @@ void print_usage(char * cmd) {
 	// TODO: would like to eventually allow deviceid discovery
 	//       based on pointer grab
 	fprintf(stderr, "Usage: %s -d DEVICEID [-c CRTCINDEX][-f] [--dry]\n\n", cmd);
+	fprintf(stderr, "   or: %s -i [-d DEVICEID] [-c CRTCINDEX][-f] [--dry]\n\n", cmd);
+
 	fprintf(stderr, "\t-d DEVICEID, --device DEVICEID\n");
 	fprintf(stderr, "\t\t\t\tSpecify the XID of the XInput2 device to modify.\n");
 	fprintf(stderr, "\t-c CRTCID, --device CRTCID\n");
 	fprintf(stderr, "\t\t\t\tThe CRTC to restrict the device to.\n");
+	fprintf(stderr, "\t-i, --interactive\n");
+	fprintf(stderr, "\t\t\t\tInteractively determine the monitor and input device to use.\n");
 	fprintf(stderr, "\t-f, --full\t\tUse the full screen area.\n");
 	fprintf(stderr, "\t--dry\t\t\tOutput the \"Coordinate Transformation Matrix\" instead of setting it.\n");
 	fprintf(stderr, "\nAlignment Control:\n");
