@@ -70,6 +70,7 @@ int xi2_device_set_matrix(Display * display, const XID id, const float * matrix)
 int xi2_device_check_matrix(Display * display, const XID id, const float * matrix);
 
 int xi2_pointer_get_next_click(Display * display, XID * deviceid, Point * point);
+int xi2_find_master_pointers(XIDeviceInfo * info, const XIDeviceInfo * info_end, XID * pointers, const int max_pointers);
 
 // Error codes for xi2_...
 #define EGET_PROPERTY_FAILED (-2)

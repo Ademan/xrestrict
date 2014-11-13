@@ -155,13 +155,14 @@ int main(int argc, char ** argv) {
 	CRTCRegion crtc_regions[10];
 
 	XRRScreenResources * resources = XRRGetScreenResourcesCurrent(display, DefaultRootWindow(display));
-	int region_count = xlib_get_crtc_regions(display, resources, crtc_regions, 10);
 
 	if (!resources) {
 		XCloseDisplay(display);
 		fprintf(stderr, "Failed to retrieve screen resources for monitor information.\n");
 		return -1;
 	}
+
+	int region_count = xlib_get_crtc_regions(display, resources, crtc_regions, 10);
 	XRRFreeScreenResources(resources);
 
 	if (region_count < 0) {
@@ -176,7 +177,6 @@ int main(int argc, char ** argv) {
 	if (interactive) {
 		// FIXME: we don't actually handle MPX
 		XID pointerid = 0;
-		int device_count = 0;
 
 		XIDeviceInfo * info = XIQueryDevice(display, XIAllDevices, &device_count);
 
@@ -205,7 +205,7 @@ int main(int argc, char ** argv) {
 			return -1;
 		}
 
-		crtc_index = xi2_find_containing_crtc(crtc_regions, region_count, &point);
+		crtc_index = find_containing_crtc(crtc_regions, region_count, &point);
 		if (crtc_index < 0) {
 			XCloseDisplay(display);
 			fprintf(stderr, "Click not in recognized CRTC.\n");

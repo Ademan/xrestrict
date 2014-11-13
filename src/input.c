@@ -105,32 +105,18 @@ void rectangle_align(const Rectangle * reference,
 	}
 }
 
-static Atom coordinate_transformation_matrix_atom=0;
-static Atom FLOAT_atom=0;
-
-int intern_atoms(Display * display) {
+int xi2_device_set_matrix(Display * display, const XID id, const float * matrix) {
 	static Atom atoms[2] = {0};
 	static char * names[] = {"Coordinate Transformation Matrix", "FLOAT"};
 
-	if (coordinate_transformation_matrix_atom == 0 && FLOAT_atom == 0) {
-		if (!XInternAtoms(display, names, 2, True, atoms)) {
-			return EINTERN_FAILED;
-		}
-		coordinate_transformation_matrix_atom = atoms[0];
-		FLOAT_atom = atoms[1];
-	}
-	return 0;
-}
-
-int xi2_device_set_matrix(Display * display, const XID id, const float * matrix) {
-	if (intern_atoms(display)) {
+	if (!XInternAtoms(display, names, 2, True, atoms)) {
 		return EINTERN_FAILED;
 	}
 
 	XIChangeProperty(display,
 			id,
-			coordinate_transformation_matrix_atom, // "Coordinate Transformation Matrix"
-			FLOAT_atom, // "FLOAT"
+			atoms[0], // "Coordinate Transformation Matrix"
+			atoms[1], // "FLOAT"
 			32,
 			PropModeReplace,
 			(unsigned char *)matrix, 9);
@@ -138,7 +124,10 @@ int xi2_device_set_matrix(Display * display, const XID id, const float * matrix)
 }
 
 int xi2_device_check_matrix(Display * display, const XID id, const float * matrix) {
-	if (intern_atoms(display)) {
+	static Atom atoms[2] = {0};
+	static char * names[] = {"Coordinate Transformation Matrix", "FLOAT"};
+
+	if (!XInternAtoms(display, names, 2, True, atoms)) {
 		return EINTERN_FAILED;
 	}
 
@@ -148,10 +137,10 @@ int xi2_device_check_matrix(Display * display, const XID id, const float * matri
 	unsigned char * data;
 	Status result = XIGetProperty(display,
 								  id,
-								  coordinate_transformation_matrix_atom,
+								  atoms[0],
 								  0, 9 /* Length in 32 bit words */,
 								  False,
-								  FLOAT_atom,
+								  atoms[1],
 								  &type_return, &format_return,
 								  &num_items_return, &bytes_after_return,
 								  &data);
@@ -263,13 +252,15 @@ int xi2_read_point(const XIValuatorState * valuators, const ValuatorIndices * va
 }
 
 int xi2_pointer_get_next_click(Display * display, XID * deviceid, Point * point) {
-	XIEventMask mask;
 	unsigned char mask_data[4] = {0};
-	mask.deviceid = *deviceid;
-	mask.mask_len = 1;
+	XIEventMask mask = {
+		.deviceid = *deviceid,
+		.mask_len = 1,
+		.mask = mask_data
+	};
+
 	XISetMask(mask_data, XI_Motion);
 	XISetMask(mask_data, XI_ButtonRelease);
-	mask.mask = mask_data;
 
 	Cursor cross = XCreateFontCursor(display, XC_crosshair);
 
@@ -337,29 +328,4 @@ int xi2_find_master_pointers(XIDeviceInfo * info, const XIDeviceInfo * info_end,
 		}
 	}
 	return pointers - pointers_base;
-}
-
-int xi2_query_master_pointers(Display * display,  XID * pointers, const int max_pointers) {
-	int device_count = 0;
-	XIDeviceInfo * info = XIQueryDevice(display, XIAllDevices, &device_count);
-
-	if (!info) {
-		return EDEVICE_QUERY_FAILED;
-	}
-
-	const XIDeviceInfo * info_end = info + device_count;
-	int result = xi2_find_master_pointers(info, info_end, pointers, max_pointers);
-
-	XFree(info); // FIXME: ensure freeing devices correctly
-	return result;
-}
-
-int xi2_find_containing_crtc(CRTCRegion * regions, const int region_count, const Point * point) {
-	for (CRTCRegion * region = regions; region < (regions + region_count); region++) {
-		if (region->left <= point->x && point->x <= region->right && \
-			region->top <= point->y && point->y <= region->bottom) {
-			return (region - regions);
-		}
-	}
-	return -1;
 }

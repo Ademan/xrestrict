@@ -13,4 +13,6 @@ void xlib_find_screen_size(Display * display, Rectangle * size);
 #define EREGIONS_OVERFLOW          (-4)
 int xlib_get_crtc_regions(Display * display, XRRScreenResources * resources, CRTCRegion * regions, const int max_regions);
 
+int find_containing_crtc(CRTCRegion * regions, const int region_count, const Point * point);
+
 #endif /* XRESTRICT_DISPLAY_H_ */
