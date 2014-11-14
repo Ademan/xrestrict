@@ -75,70 +75,57 @@ int main(int argc, char ** argv) {
 
 	// TODO: break out command line parsing into another function
 	//       or use getopt
-	int parsing_state = PARSE_NONE;
 	for (int i = 1; i < argc; i++) {
-		if (argv[i][0] == '-') {
-			if (parsing_state != PARSE_NONE) {
+		if (strcmp(argv[i], "-d") == 0 || strcmp(argv[i], "--device") == 0) {
+			char * invalid;
+			if (++i >= argc) {
 				print_usage(argv[0]);
 				return -1;
 			}
-			if (strcmp(argv[i], "-d") == 0 || strcmp(argv[i], "--device") == 0) {
-				parsing_state = PARSE_DEVICEID;
-			} else if (strcmp(argv[i], "-c") == 0 || strcmp(argv[i], "--crtc") == 0) {
-				parsing_state = PARSE_CRTCINDEX;
-			} else if (strcmp(argv[i], "--dry") == 0) {
-				dry_run = true;
-			} else if (strcmp(argv[i], "-f") == 0 || strcmp(argv[i], "--full") == 0) {
-				full_screen = true;
-			} else if (strcmp(argv[i], "-t") == 0 || strcmp(argv[i], "--top") == 0) {
-				config.affinity.vertical = VA_Top;
-			} else if (strcmp(argv[i], "-b") == 0 || strcmp(argv[i], "--bottom") == 0) {
-				config.affinity.vertical = VA_Bottom;
-			} else if (strcmp(argv[i], "-l") == 0 || strcmp(argv[i], "--left") == 0) {
-				config.affinity.horizontal = HA_Left;
-			} else if (strcmp(argv[i], "-r") == 0 || strcmp(argv[i], "--right") == 0) {
-				config.affinity.horizontal = HA_Right;
-			} else if (strcmp(argv[i], "--fit") == 0) {
-				config.type = CTM_Fit;
-			} else if (strcmp(argv[i], "-w") == 0 || strcmp(argv[i], "--match-width") == 0) {
-				config.type = CTM_MatchWidth;
-			} else if (strcmp(argv[i], "-H") == 0 || strcmp(argv[i], "--match-height") == 0) {
-				config.type = CTM_MatchHeight;
-			} else if (strcmp(argv[i], "-i") == 0 || strcmp(argv[i], "--interactive") == 0) {
-				interactive = true;
-			} else {
-				print_usage(argv[0]);
-				return -1;
-			}
-		} else {
-			if (parsing_state == PARSE_DEVICEID) {
-				char * invalid;
-				device_id = strtol(argv[i], &invalid, 10);
-				if (invalid && *invalid != '\0') {
-					fprintf(stderr, "Failed to parse device id \"%s\".\n", argv[i]);
-					print_usage(argv[0]);
-					return -1;
-				}
-				parsing_state = PARSE_NONE;
-			} else if (parsing_state == PARSE_CRTCINDEX) {
-				char * invalid;
-				crtc_index = strtol(argv[i], &invalid, 10);
-				if (invalid && *invalid != '\0') {
-					fprintf(stderr, "Failed to parse crtc index \"%s\".\n", argv[i]);
-					print_usage(argv[0]);
-					return -1;
-				}
-				parsing_state = PARSE_NONE;
-			} else {
-				print_usage(argv[0]);
-				return -1;
-			}
-		}
-	}
 
-	if (parsing_state != PARSE_NONE) {
-		print_usage(argv[0]);
-		return -1;
+			device_id = strtol(argv[i], &invalid, 10);
+			if (invalid && *invalid != '\0') {
+				fprintf(stderr, "Failed to parse device id \"%s\".\n", argv[i]);
+				print_usage(argv[0]);
+				return -1;
+			}
+		} else if (strcmp(argv[i], "-c") == 0 || strcmp(argv[i], "--crtc") == 0) {
+			char * invalid;
+			if (++i >= argc) {
+				print_usage(argv[0]);
+				return -1;
+			}
+
+			crtc_index = strtol(argv[i], &invalid, 10);
+			if (invalid && *invalid != '\0') {
+				fprintf(stderr, "Failed to parse crtc index \"%s\".\n", argv[i]);
+				print_usage(argv[0]);
+				return -1;
+			}
+		} else if (strcmp(argv[i], "--dry") == 0) {
+			dry_run = true;
+		} else if (strcmp(argv[i], "-f") == 0 || strcmp(argv[i], "--full") == 0) {
+			full_screen = true;
+		} else if (strcmp(argv[i], "-t") == 0 || strcmp(argv[i], "--top") == 0) {
+			config.affinity.vertical = VA_Top;
+		} else if (strcmp(argv[i], "-b") == 0 || strcmp(argv[i], "--bottom") == 0) {
+			config.affinity.vertical = VA_Bottom;
+		} else if (strcmp(argv[i], "-l") == 0 || strcmp(argv[i], "--left") == 0) {
+			config.affinity.horizontal = HA_Left;
+		} else if (strcmp(argv[i], "-r") == 0 || strcmp(argv[i], "--right") == 0) {
+			config.affinity.horizontal = HA_Right;
+		} else if (strcmp(argv[i], "--fit") == 0) {
+			config.type = CTM_Fit;
+		} else if (strcmp(argv[i], "-w") == 0 || strcmp(argv[i], "--match-width") == 0) {
+			config.type = CTM_MatchWidth;
+		} else if (strcmp(argv[i], "-H") == 0 || strcmp(argv[i], "--match-height") == 0) {
+			config.type = CTM_MatchHeight;
+		} else if (strcmp(argv[i], "-i") == 0 || strcmp(argv[i], "--interactive") == 0) {
+			interactive = true;
+		} else {
+			print_usage(argv[0]);
+			return -1;
+		}
 	}
 
 	Display * display = XOpenDisplay(NULL);
