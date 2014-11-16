@@ -2,15 +2,31 @@
 
 A utility to modify the "Coordinate Transformation Matrix" of an XInput2 device.
 
+## Interactive Usage
+
+Interactive mode is intended to be more user friendly than the "Basic Usage" explained below.
+
+    xrestrict -i [options]
+
+1. Ensure your input device is plugged in.
+2. Choose one of your computer monitors you wish to restrict your device to.
+3. Invoke `xrestrict -i`
+3. Use your device to click somewhere on the monitor you chose.
+
+`xrestrict` will then modify your "Coordinate Transformation Matrix" to restrict your chosen device to your chosen monitor.
+
+> NOTE: Because you have restricted your device to one screen, if you wish to change this later, you will not be able to use interactive mode to select a different screen! To work around this, issue `xrestrict --full -i` to interactively select your device, but "confine" it to your entire virtual monitor. This will allow you to click on all of your screens using your device again. Once you have done this you can use `xrestrict -i` again to select the new monitor. I have a plan to address this, but I am also open to suggestions for improving this issue.
+
 ## Basic Usage
 
-    xrestrict -d $DEVICEID [-c $CRTCINDEX]
+    xrestrict -d $DEVICEID [-c $CRTCINDEX] [options]
 
 * `DEVICEID` is the XInput2 device XID, identical to that reported by `xinput list`
 * `CRTCINDEX` is the index in 0..N-1 of the N CRTCs to restrict the pointer device to.
 `CRTCINDEX` defaults to 0.
 For most multi-monitor setups, each non-mirrored CRTC corresponds to a different monitor.
 For most single-monitor setups, there will be only one CRTC which is equal to the size of the virtual screen.
+* `options` is a set of extra arguments which control things like alignment and fitting, for a complete list and description please look at `xrestrict`'s usage output.
 
 ## Results
 
