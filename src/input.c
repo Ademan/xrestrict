@@ -134,7 +134,7 @@ int xi2_device_check_matrix(Display * display, const XID id, const float * matri
 	Atom type_return;
 	int format_return;
 	unsigned long num_items_return, bytes_after_return;
-	unsigned char * data;
+	float * retrieved_matrix;
 	Status result = XIGetProperty(display,
 								  id,
 								  atoms[0],
@@ -143,7 +143,7 @@ int xi2_device_check_matrix(Display * display, const XID id, const float * matri
 								  atoms[1],
 								  &type_return, &format_return,
 								  &num_items_return, &bytes_after_return,
-								  &data);
+								  (unsigned char **)&retrieved_matrix);
 
 	if (result != Success) {
 		return -1; // TODO: select error code
@@ -151,15 +151,13 @@ int xi2_device_check_matrix(Display * display, const XID id, const float * matri
 		return -1; // TODO: select error code
 	}
 
-	float * retrieved_matrix = (float *)data;
-
 	for (int i = 0; i < 9; i++) {
 		if (retrieved_matrix[i] != matrix[i]) {
 			return -1; // TODO: select error code
 		}
 	}
 
-	XFree(data);
+	XFree(retrieved_matrix);
 
 	return 0;
 }
