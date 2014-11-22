@@ -13,6 +13,7 @@
 #include "xrestrict.h"
 
 #define INVALID_DEVICE_ID -1
+#define MAX_ABSOLUTE_POINTERS 16
 
 void calc_matrix(const XID deviceid, const CTMConfiguration * config, Rectangle * screen_size, const CRTCRegion * region, const PointerRegion * pointer_region, float * matrix) {
 	Rectangle scaled, aligned;
@@ -28,13 +29,15 @@ void print_usage(char * cmd) {
 	// TODO: would like to eventually allow deviceid discovery
 	//       based on pointer grab
 	fprintf(stderr, "Usage: %s -d DEVICEID [-c CRTCINDEX][-f] [--dry]\n", cmd);
-	fprintf(stderr, "   or: %s -i [-d DEVICEID] [-c CRTCINDEX][-f] [--dry]\n\n", cmd);
+	fprintf(stderr, "   or: %s -i|-I [-d DEVICEID] [-c CRTCINDEX][-f] [--dry]\n\n", cmd);
 
 	fprintf(stderr, "\t-d DEVICEID, --device DEVICEID\n");
 	fprintf(stderr, "\t\t\t\tSpecify the XID of the XInput2 device to modify.\n");
 	fprintf(stderr, "\t-c CRTCID, --device CRTCID\n");
 	fprintf(stderr, "\t\t\t\tThe CRTC to restrict the device to.\n");
 	fprintf(stderr, "\t-i, --interactive\tInteractively determine the monitor and input device to use.\n");
+	fprintf(stderr, "\t-I, --interactive-identity\n");
+	fprintf(stderr, "\t\t\t\tSame as -i but prior to engaging interactive selection, reverts all Coordinate Transformation Matrices to identity and attempts to restore them afterwards.\n");
 	fprintf(stderr, "\t-f, --full\t\tUse the full screen area.\n");
 	fprintf(stderr, "\t--dry\t\t\tOutput the \"Coordinate Transformation Matrix\" instead of setting it.\n");
 	fprintf(stderr, "\nAlignment Control:\n");
@@ -63,6 +66,7 @@ int main(int argc, char ** argv) {
 	bool dry_run = false;
 	bool full_screen = false;
 	bool interactive = false;
+	bool set_identity = false;
 
 	// TODO: pull type from command line
 	CTMConfiguration config = {
@@ -122,6 +126,9 @@ int main(int argc, char ** argv) {
 			config.type = CTM_MatchHeight;
 		} else if (strcmp(argv[i], "-i") == 0 || strcmp(argv[i], "--interactive") == 0) {
 			interactive = true;
+		} else if (strcmp(argv[i], "-I") == 0 || strcmp(argv[i], "--interactive-identity") == 0) {
+			interactive = true;
+			set_identity = true;
 		} else {
 			print_usage(argv[0]);
 			return -1;
@@ -181,6 +188,54 @@ int main(int argc, char ** argv) {
 			return -1;
 		}
 
+		XID absolute_pointers[MAX_ABSOLUTE_POINTERS];
+		float absolute_pointer_matrices[MAX_ABSOLUTE_POINTERS][9];
+		int absolute_pointer_count = 0;
+
+		if (set_identity) {
+			absolute_pointer_count = xi2_find_absolute_pointers(display, info, info_end, absolute_pointers, MAX_ABSOLUTE_POINTERS);
+
+			if (absolute_pointer_count == EDEVICES_OVERFLOW) {
+				XCloseDisplay(display);
+				fprintf(stderr, "More than %d absolute pointers detected, aborting.\n", MAX_ABSOLUTE_POINTERS);
+				return -1;
+			} else if (absolute_pointer_count < 0) {
+				XCloseDisplay(display);
+				fprintf(stderr, "Error");
+				return -1;
+			}
+
+			int current_pointer = 0;
+			for (int i = 0; i < absolute_pointer_count; i++) {
+				if (!xi2_device_get_matrix(display, absolute_pointers[i], absolute_pointer_matrices[current_pointer])) {
+					absolute_pointers[current_pointer] = absolute_pointers[i];
+					current_pointer++;
+				} 
+			}
+			absolute_pointer_count = current_pointer;
+
+			for (int i = 0; i < absolute_pointer_count; i++) {
+				if (xi2_device_set_matrix(display, absolute_pointers[i], identity)) {
+					fprintf(stderr, "Error setting Coordinate Transformation Matrix for device %d, attempting to revert.\n", absolute_pointers[i]);
+
+					// Attempt to revert matrices for all devices we've touched
+					// including this one
+					for (; i >= 0; i--) {
+						if (xi2_device_set_matrix(display, absolute_pointers[i], absolute_pointer_matrices[i])) {
+							fprintf(stderr, "Error reverting the Coordinate Transformation matrix for device %d. It was [", absolute_pointers[i]);
+							for (int j = 0; j < 9; j++) {
+								fprintf(stderr, " %f", absolute_pointer_matrices[i][j]);
+							}
+							fprintf(stderr, " ]\n");
+						}
+					}
+					XIFreeDeviceInfo(info);
+					XCloseDisplay(display);
+					return -1;
+				}
+			}
+		}
+
 		XIFreeDeviceInfo(info);
 
 		Point point;
@@ -190,6 +245,19 @@ int main(int argc, char ** argv) {
 			XCloseDisplay(display);
 			fprintf(stderr, "Failed to use pointer grab to determine CRTC and device id.\n");
 			return -1;
+		}
+
+		if (set_identity) {
+			for (int i = 0; i < absolute_pointer_count; i++) {
+				if (xi2_device_set_matrix(display, absolute_pointers[i], absolute_pointer_matrices[i])) {
+					fprintf(stderr, "Error restoring Coordinate Transformation Matrix for device %d. ", absolute_pointers[i]);
+					fprintf(stderr, "Original matrix was [");
+					for (int j = 0; j < 9; j++) {
+						fprintf(stderr, " %f", absolute_pointer_matrices[i][j]);
+					}
+					fprintf(stderr, "]\n");
+				}
+			}
 		}
 
 		crtc_index = find_containing_crtc(crtc_regions, region_count, &point);

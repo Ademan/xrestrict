@@ -65,12 +65,17 @@ float rectangle_scale_preserve_aspect(const Rectangle * target, const Rectangle 
 void calculate_coordinate_transform_matrix(const Rectangle * region, const Rectangle * screen_size, float * matrix);
 
 int xi2_device_info_find_xy_valuators(Display * display, const XIDeviceInfo * info, ValuatorIndices * valuator_indices);
+int xi2_find_absolute_pointers(Display *display, XIDeviceInfo * info, const XIDeviceInfo * info_end, XID * pointers, const int max_pointers);
 int xi2_device_get_region(XIDeviceInfo * device, const ValuatorIndices * valuator_indices, PointerRegion * region);
+
+int xi2_device_get_matrix(Display * display, const XID id, float * matrix);
 int xi2_device_set_matrix(Display * display, const XID id, const float * matrix);
 int xi2_device_check_matrix(Display * display, const XID id, const float * matrix);
 
-int xi2_pointer_get_next_click(Display * display, XID * deviceid, Point * point);
 int xi2_find_master_pointers(XIDeviceInfo * info, const XIDeviceInfo * info_end, XID * pointers, const int max_pointers);
+int xi2_pointer_get_next_click(Display * display, XID * deviceid, Point * point);
+
+const extern float identity[9];
 
 // Error codes for xi2_...
 #define EGET_PROPERTY_FAILED (-2)
@@ -83,5 +88,6 @@ int xi2_find_master_pointers(XIDeviceInfo * info, const XIDeviceInfo * info_end,
 #define EMASTER_POINTERS_OVERFLOW (-64)
 #define EABSOLUTE_POINTERS_OVERFLOW (-128)
 #define EDEVICES_OVERFLOW (-256)
+#define EMATRIX_NOT_EQUAL (-512)
 
 #endif /* XRESTRICT_INPUT_H_ */
