@@ -3,6 +3,12 @@
 #include "input.h"
 #include <X11/cursorfont.h>
 
+const float identity[9] = {
+	1, 0, 0,
+	0, 1, 0,
+	0, 0, 1
+};
+
 void calculate_coordinate_transform_matrix(const Rectangle * region, const Rectangle * screen_size, float * matrix) {
 	float x_scale = RECT_WIDTH(*region) / (float)RECT_WIDTH(*screen_size);
 	float y_scale = RECT_HEIGHT(*region) / (float)RECT_HEIGHT(*screen_size);
@@ -123,7 +129,7 @@ int xi2_device_set_matrix(Display * display, const XID id, const float * matrix)
 	return 0;
 }
 
-int xi2_device_check_matrix(Display * display, const XID id, const float * matrix) {
+int xi2_device_get_matrix(Display * display, const XID id, float * matrix) {
 	static Atom atoms[2] = {0};
 	static char * names[] = {"Coordinate Transformation Matrix", "FLOAT"};
 
@@ -149,15 +155,29 @@ int xi2_device_check_matrix(Display * display, const XID id, const float * matri
 		return -1; // TODO: select error code
 	} else if (format_return != 32 && num_items_return != 9 && bytes_after_return != 0) {
 		return -1; // TODO: select error code
+	} else {
+		for (int i = 0; i < 9; i++) {
+			matrix[i] = retrieved_matrix[i];
+		}
+
+		XFree(retrieved_matrix);
+		return 0;
+	}
+}
+
+int xi2_device_check_matrix(Display * display, const XID id, const float * matrix) {
+	float retrieved_matrix[9];
+	int result = xi2_device_get_matrix(display, id, retrieved_matrix);
+
+	if (!result) {
+		return result;
 	}
 
 	for (int i = 0; i < 9; i++) {
 		if (retrieved_matrix[i] != matrix[i]) {
-			return -1; // TODO: select error code
+			return EMATRIX_NOT_EQUAL; // TODO: select error code
 		}
 	}
-
-	XFree(retrieved_matrix);
 
 	return 0;
 }
@@ -309,6 +329,24 @@ int xi2_pointer_get_next_click(Display * display, XID * deviceid, Point * point)
 	}
 	
 	return -1;
+}
+
+int xi2_find_absolute_pointers(Display *display, XIDeviceInfo * info, const XIDeviceInfo * info_end, XID * pointers, const int max_pointers) {
+	const XID * pointers_base = pointers;
+	const XID * pointers_end = pointers + max_pointers;
+
+	for (; info < info_end; info++) {
+		ValuatorIndices valuators;
+		if (!xi2_device_info_find_xy_valuators(display, info, &valuators)) {
+			if (pointers >= pointers_end) {
+				return EDEVICES_OVERFLOW;
+			}
+
+			*pointers = info->deviceid;
+			pointers++;
+		}
+	}
+	return pointers - pointers_base;
 }
 
 int xi2_find_master_pointers(XIDeviceInfo * info, const XIDeviceInfo * info_end, XID * pointers, const int max_pointers) {
