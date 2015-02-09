@@ -38,6 +38,7 @@ To check the current "Coordinate Transformation Matrix" of a device, invoke `xin
 
 xrestrict uses Xlib, XInput2 support from Xlib, and XRandR
 
+### Ubuntu
 On Ubuntu 14.04 the above dependencies correspond to the following packages:
 
     libx11-dev libxi-dev libxrandr-dev
@@ -49,6 +50,15 @@ in addition to the basic packages required to build most software, and git to re
 From the console, a user may install all of these at once with the command:
 
     sudo apt-get install build-essential autoconf automake libx11-dev libxi-dev libxrandr-dev
+
+### openSUSE
+On openSUSE 13.2 the above dependencies correspond to the following packages:
+
+    git automake autoconf gcc make libx11-devel libXrandr-devel xinput libXi-devel
+
+From the console, a user may install all of these at once with the command:
+
+    sudo zypper install git automake autoconf gcc make libX11-devel libXrandr-devel xinput libXi-devel
 
 ## Building
 
