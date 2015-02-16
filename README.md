@@ -6,16 +6,18 @@ A utility to modify the "Coordinate Transformation Matrix" of an XInput2 device.
 
 Interactive mode is intended to be more user friendly than the "Basic Usage" explained below.
 
-    xrestrict -i [options]
+    xrestrict -I [options]
 
 1. Ensure your input device is plugged in.
 2. Choose one of your computer monitors you wish to restrict your device to.
-3. Invoke `xrestrict -i`
-3. Use your device to click somewhere on the monitor you chose.
+3. Invoke `xrestrict -I`
+4. Use your device to click somewhere on the monitor you chose.
 
 `xrestrict` will then modify your "Coordinate Transformation Matrix" to restrict your chosen device to your chosen monitor.
 
-> NOTE: Because you have restricted your device to one screen, if you wish to change this later, you will not be able to use interactive mode to select a different screen! To work around this, issue `xrestrict --full -i` to interactively select your device, but "confine" it to your entire virtual monitor. This will allow you to click on all of your screens using your device again. Once you have done this you can use `xrestrict -i` again to select the new monitor. I have a plan to address this, but I am also open to suggestions for improving this issue.
+> NOTE: In step 4 use device you wish to modify to click.
+
+> NOTE: To function properly, `xrestrict -I` temporarily resets some "Coordinate Transformation Matrix"s to the default value. However, if `xrestrict -I` terminates abnormally, it may not restore the correct "Coordinate Transformation Matrix"s. This is not likely to be a problem because most devices already use the default "Coordinate Transformation Matrix" to begin with, so `xrestrict -I` doesn't change it. In addition, `xrestrict -I` only modifies the "Coordinate Transformation Matrix" of devices with "Abs X" and "Abs Y" axes. Mice generally do not posess these and instead have "Rel X" and "Rel Y" axes. Typically, "Abs X" and "Abs Y" are only found on touchscreens and drawing tablets, and it is likely the only device like that is the one you are modifying.
 
 ## Basic Usage
 
