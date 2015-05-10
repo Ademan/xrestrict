@@ -6,8 +6,8 @@
 #endif
 
 typedef struct Rectangle {
-	unsigned int top, left;
-	unsigned int bottom, right;
+	int top, left;
+	int bottom, right;
 } Rectangle;
 
 #define RECT_WIDTH(region) ((region).right - (region).left)
