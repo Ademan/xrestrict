@@ -216,13 +216,13 @@ int main(int argc, char ** argv) {
 
 			for (int i = 0; i < absolute_pointer_count; i++) {
 				if (xi2_device_set_matrix(display, absolute_pointers[i], identity)) {
-					fprintf(stderr, "Error setting Coordinate Transformation Matrix for device %d, attempting to revert.\n", absolute_pointers[i]);
+					fprintf(stderr, "Error setting Coordinate Transformation Matrix for device %lu, attempting to revert.\n", absolute_pointers[i]);
 
 					// Attempt to revert matrices for all devices we've touched
 					// including this one
 					for (; i >= 0; i--) {
 						if (xi2_device_set_matrix(display, absolute_pointers[i], absolute_pointer_matrices[i])) {
-							fprintf(stderr, "Error reverting the Coordinate Transformation matrix for device %d. It was [", absolute_pointers[i]);
+							fprintf(stderr, "Error reverting the Coordinate Transformation matrix for device %lu. It was [", absolute_pointers[i]);
 							for (int j = 0; j < 9; j++) {
 								fprintf(stderr, " %f", absolute_pointer_matrices[i][j]);
 							}
@@ -250,7 +250,7 @@ int main(int argc, char ** argv) {
 		if (set_identity) {
 			for (int i = 0; i < absolute_pointer_count; i++) {
 				if (xi2_device_set_matrix(display, absolute_pointers[i], absolute_pointer_matrices[i])) {
-					fprintf(stderr, "Error restoring Coordinate Transformation Matrix for device %d. ", absolute_pointers[i]);
+					fprintf(stderr, "Error restoring Coordinate Transformation Matrix for device %lu. ", absolute_pointers[i]);
 					fprintf(stderr, "Original matrix was [");
 					for (int j = 0; j < 9; j++) {
 						fprintf(stderr, " %f", absolute_pointer_matrices[i][j]);

@@ -32,7 +32,7 @@ int xlib_get_crtc_regions(Display * display, XRRScreenResources * resources, CRT
 		regions->right = crtc_info->x + crtc_info->width;
 		regions++;
 #		if DEBUG
-			printf("%d(%dx%d)+(%d,%d) mode=%d\n", *crtc, crtc_info->width, crtc_info->height, crtc_info->x, crtc_info->y, crtc_info->mode);
+			printf("%lu(%dx%d)+(%d,%d) mode=%lu\n", *crtc, crtc_info->width, crtc_info->height, crtc_info->x, crtc_info->y, crtc_info->mode);
 #		endif
 		XRRFreeCrtcInfo(crtc_info);
 	}
