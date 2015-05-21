@@ -40,7 +40,10 @@ typedef struct DeviceIdentifier {
 	int product;
 } DeviceIdentifier;
 
-typedef struct Rectangle PointerRegion;
+typedef struct PointerRegion {
+	Rectangle region;
+	int hres, vres; // Units per meter in horizontal and vertical dir
+} PointerRegion;
 
 typedef struct ValuatorIndices {
 	int x, y;

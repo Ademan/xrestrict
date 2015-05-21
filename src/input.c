@@ -227,12 +227,14 @@ int xi2_device_get_region(XIDeviceInfo * device, const ValuatorIndices * valuato
 
 			if (valuator->mode == XIModeAbsolute) {
 				if (valuator->number == valuator_indices->x) {
-					region->left = (int)valuator->min;
-					region->right = (int)valuator->max;
+					region->region.left = (int)valuator->min;
+					region->region.right = (int)valuator->max;
+					region->hres = valuator->resolution;
 					found_x = true;
 				} else if (valuator->number == valuator_indices->y) {
-					region->top = (int)valuator->min;
-					region->bottom = (int)valuator->max;
+					region->region.top = (int)valuator->min;
+					region->region.bottom = (int)valuator->max;
+					region->vres = valuator->resolution;
 					found_y = true;
 				}
 			}

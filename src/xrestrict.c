@@ -16,12 +16,12 @@
 #define MAX_ABSOLUTE_POINTERS 16
 #define MAX_CRTC 10
 
-void calc_matrix(const XID deviceid, const CTMConfiguration * config, Rectangle * screen_size, const CRTCRegion * region, const PointerRegion * pointer_region, float * matrix) {
+void calc_matrix(const XID deviceid, const CTMConfiguration * config, Rectangle * screen_size, const CRTCRegion * crtc, const Rectangle * input_region, float * matrix) {
 	Rectangle scaled, aligned;
 
-	rectangle_scale_preserve_aspect(region, pointer_region, config->type, &scaled);
+	rectangle_scale_preserve_aspect(&(crtc->region), input_region, config->type, &scaled);
 
-	rectangle_align(region, &scaled, &config->affinity, &aligned);
+	rectangle_align(&(crtc->region), &scaled, &config->affinity, &aligned);
 
 	calculate_coordinate_transform_matrix(&aligned, screen_size, matrix);
 }
@@ -47,6 +47,7 @@ void print_usage(char * cmd) {
 	fprintf(stderr, "\t-b, --bottom\t\tAlign input region to bottom of screen.\n");
 	fprintf(stderr, "\t-r, --right\t\tAlign input region to right of screen.\n");
 	fprintf(stderr, "\nScaling Control:\n");
+	fprintf(stderr, "\t-o, --one\t\tAttempt to discover device and monitor size such that one centimeter on the device corresponds to a centimeter on the monitor.\n");
 	fprintf(stderr, "\t-w, --match-width\tScale input region to match width of target region.\n");
 	fprintf(stderr, "\t-H, --match-height\tScale input region to match height of target region.\n");
 	fprintf(stderr, "\t--fit\t\t\tScale input region to completely contain target region (Default).\n");
@@ -68,6 +69,7 @@ int main(int argc, char ** argv) {
 	bool full_screen = false;
 	bool interactive = false;
 	bool set_identity = false;
+	bool one_to_one = false;
 
 	// TODO: pull type from command line
 	CTMConfiguration config = {
@@ -130,6 +132,9 @@ int main(int argc, char ** argv) {
 		} else if (strcmp(argv[i], "-I") == 0 || strcmp(argv[i], "--interactive-identity") == 0) {
 			interactive = true;
 			set_identity = true;
+		} else if (strcmp(argv[i], "-o") == 0 || strcmp(argv[i], "--one") == 0) {
+			one_to_one = true;
+			config.type = CTM_None;
 		} else {
 			print_usage(argv[0]);
 			return -1;
@@ -143,9 +148,9 @@ int main(int argc, char ** argv) {
 		return -1;
 	}
 
-	Rectangle screen_size;
+	CRTCRegion screen_size;
 
-	xlib_find_screen_size(display, &screen_size);
+	xlib_find_screen_size(display, &(screen_size.region));
 
 	CRTCRegion crtc_regions[MAX_CRTC];
 
@@ -300,16 +305,6 @@ int main(int argc, char ** argv) {
 		return -1;
 	}
 
-	//TODO: sort crtcs?
-
-	CRTCRegion * region;
-   
-	if (full_screen) {
-		region = &screen_size;
-	} else {
-		region = crtc_regions + crtc_index;
-	}
-
 	PointerRegion pointer_region;
 	int region_result = xi2_device_get_region(device, &valuator_indices, &pointer_region);
 
@@ -319,9 +314,34 @@ int main(int argc, char ** argv) {
 		return -1;
 	}
 
+	CRTCRegion * region;
+	Rectangle input_region = pointer_region.region;
+	if (full_screen) {
+		region = &screen_size;
+	} else {
+		region = crtc_regions + crtc_index;
+
+		if (one_to_one) {
+			resources = XRRGetScreenResourcesCurrent(display, DefaultRootWindow(display));
+			int output_result = xlib_get_crtc_output_density(display, resources, region);
+			XRRFreeScreenResources(resources);
+
+			if (output_result) {
+				XCloseDisplay(display);
+				fprintf(stderr, "Failed to retrieve CRTC %d output density.\n", (int)region->crtc);
+				return -1;
+			}
+
+			input_region = region->region;
+
+			input_region.right = input_region.left + 1000L * RECT_WIDTH(region->region) * RECT_WIDTH(pointer_region.region) / pointer_region.hres / region->width;
+			input_region.bottom = input_region.top + 1000L * RECT_HEIGHT(region->region) * RECT_HEIGHT(pointer_region.region) / pointer_region.vres / region->height;
+		}
+	}
+
 	float matrix[9] = {0.0};
 
-	calc_matrix(device_id, &config, &screen_size, region, &pointer_region, matrix);
+	calc_matrix(device_id, &config, &(screen_size.region), region, &input_region, matrix);
 
 	if (!dry_run) {
 		int set_matrix_results = xi2_device_set_matrix(display, device_id, matrix);

@@ -13,8 +13,6 @@ typedef struct Rectangle {
 #define RECT_WIDTH(region) ((region).right - (region).left)
 #define RECT_HEIGHT(region) ((region).bottom - (region).top)
 
-typedef struct Rectangle CRTCRegion;
-
 // Double due to uncertainty about valuator values
 typedef struct Point {
 	double x, y;
