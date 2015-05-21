@@ -19,7 +19,7 @@ int xlib_get_crtc_regions(Display * display, XRRScreenResources * resources, CRT
 
 		XRRCrtcInfo * crtc_info = XRRGetCrtcInfo(display, resources, *crtc);
 		if (!crtc_info) {
-			return -1; // FIXME: select error code
+			return ECRTC_INFO_REQUEST_FAILED;
 		}
 
 		if (crtc_info->noutput < 1) {
