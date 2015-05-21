@@ -14,6 +14,7 @@
 
 #define INVALID_DEVICE_ID -1
 #define MAX_ABSOLUTE_POINTERS 16
+#define MAX_CRTC 10
 
 void calc_matrix(const XID deviceid, const CTMConfiguration * config, Rectangle * screen_size, const CRTCRegion * region, const PointerRegion * pointer_region, float * matrix) {
 	Rectangle scaled, aligned;
@@ -146,7 +147,7 @@ int main(int argc, char ** argv) {
 
 	xlib_find_screen_size(display, &screen_size);
 
-	CRTCRegion crtc_regions[10];
+	CRTCRegion crtc_regions[MAX_CRTC];
 
 	XRRScreenResources * resources = XRRGetScreenResourcesCurrent(display, DefaultRootWindow(display));
 
@@ -156,7 +157,7 @@ int main(int argc, char ** argv) {
 		return -1;
 	}
 
-	int region_count = xlib_get_crtc_regions(display, resources, crtc_regions, 10);
+	int region_count = xlib_get_crtc_regions(display, resources, crtc_regions, MAX_CRTC);
 	XRRFreeScreenResources(resources);
 
 	if (region_count < 0) {
