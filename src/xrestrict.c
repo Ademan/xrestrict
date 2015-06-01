@@ -42,8 +42,12 @@ void print_usage(char * cmd) {
 	fprintf(stderr, "\t-f, --full\t\tUse the full screen area.\n");
 	fprintf(stderr, "\t--dry\t\t\tOutput the \"Coordinate Transformation Matrix\" instead of setting it.\n");
 	fprintf(stderr, "\nAlignment Control:\n");
-	fprintf(stderr, "\t-t, --top\t\tAlign input region to top of screen (Default).\n");
-	fprintf(stderr, "\t-l, --left\t\tAlign input region to left of screen (Default).\n");
+	fprintf(stderr, "\t-H, --horiztontal left|center|right\n");
+	fprintf(stderr, "\t\t\t\tAlign input region horizontally (Default: left).\n");
+	fprintf(stderr, "\t-V, --vertical top|center|bottom\n");
+	fprintf(stderr, "\t\t\t\tAlign input region vertically (Default: top).\n");
+	fprintf(stderr, "\t-t, --top\t\tAlign input region to top of screen.\n");
+	fprintf(stderr, "\t-l, --left\t\tAlign input region to left of screen.\n");
 	fprintf(stderr, "\t-b, --bottom\t\tAlign input region to bottom of screen.\n");
 	fprintf(stderr, "\t-r, --right\t\tAlign input region to right of screen.\n");
 	fprintf(stderr, "\nScaling Control:\n");
@@ -121,6 +125,40 @@ int main(int argc, char ** argv) {
 			config.affinity.horizontal = HA_Left;
 		} else if (strcmp(argv[i], "-r") == 0 || strcmp(argv[i], "--right") == 0) {
 			config.affinity.horizontal = HA_Right;
+		} else if (strcmp(argv[i], "-H") == 0 || strcmp(argv[i], "--horizontal") == 0) {
+			if (++i >= argc) {
+				print_usage(argv[0]);
+				return -1;
+			}
+
+			if (strcmp(argv[i], "left") == 0) {
+				config.affinity.horizontal = HA_Left;
+			} else if (strcmp(argv[i], "center") == 0) {
+				config.affinity.horizontal = HA_Centered;
+			} else if (strcmp(argv[i], "right") == 0) {
+				config.affinity.horizontal = HA_Right;
+			} else {
+				fprintf(stderr, "Unknown horizontal alignment \"%s\".\n", argv[i]);
+				print_usage(argv[0]);
+				return -1;
+			}
+		} else if (strcmp(argv[i], "-V") == 0 || strcmp(argv[i], "--vertical") == 0) {
+			if (++i >= argc) {
+				print_usage(argv[0]);
+				return -1;
+			}
+
+			if (strcmp(argv[i], "top") == 0) {
+				config.affinity.vertical = VA_Top;
+			} else if (strcmp(argv[i], "center") == 0) {
+				config.affinity.vertical = VA_Centered;
+			} else if (strcmp(argv[i], "bottom") == 0) {
+				config.affinity.vertical = VA_Bottom;
+			} else {
+				fprintf(stderr, "Unknown vertical alignment \"%s\".\n", argv[i]);
+				print_usage(argv[0]);
+				return -1;
+			}
 		} else if (strcmp(argv[i], "--fit") == 0) {
 			config.type = CTM_Fit;
 		} else if (strcmp(argv[i], "-w") == 0 || strcmp(argv[i], "--match-width") == 0) {
