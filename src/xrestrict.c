@@ -27,8 +27,6 @@ void calc_matrix(const XID deviceid, const CTMConfiguration * config, Rectangle 
 }
 
 void print_usage(char * cmd) {
-	// TODO: would like to eventually allow deviceid discovery
-	//       based on pointer grab
 	fprintf(stderr, "Usage: %s -d DEVICEID [-c CRTCINDEX][-f] [--dry]\n", cmd);
 	fprintf(stderr, "   or: %s -i|-I [-d DEVICEID] [-c CRTCINDEX][-f] [--dry]\n\n", cmd);
 
@@ -75,7 +73,6 @@ int main(int argc, char ** argv) {
 	bool set_identity = false;
 	bool one_to_one = false;
 
-	// TODO: pull type from command line
 	CTMConfiguration config = {
 		.type = CTM_Fit,
 		.affinity = {
