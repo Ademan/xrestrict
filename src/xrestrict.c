@@ -26,33 +26,33 @@ void calc_matrix(const XID deviceid, const CTMConfiguration * config, Rectangle 
 	calculate_coordinate_transform_matrix(&aligned, screen_size, matrix);
 }
 
-void print_usage(char * cmd) {
-	fprintf(stderr, "Usage: %s -d DEVICEID [-c CRTCINDEX][-f] [--dry]\n", cmd);
-	fprintf(stderr, "   or: %s -i|-I [-d DEVICEID] [-c CRTCINDEX][-f] [--dry]\n\n", cmd);
+void print_usage(FILE * file, char * cmd) {
+	fprintf(file, "Usage: %s -d DEVICEID [-c CRTCINDEX][-f] [--dry]\n", cmd);
+	fprintf(file, "   or: %s -i|-I [-d DEVICEID] [-c CRTCINDEX][-f] [--dry]\n\n", cmd);
 
-	fprintf(stderr, "\t-d DEVICEID, --device DEVICEID\n");
-	fprintf(stderr, "\t\t\t\tSpecify the XID of the XInput2 device to modify.\n");
-	fprintf(stderr, "\t-c CRTCID, --device CRTCID\n");
-	fprintf(stderr, "\t\t\t\tThe CRTC to restrict the device to.\n");
-	fprintf(stderr, "\t-i, --interactive\tInteractively determine the monitor and input device to use.\n");
-	fprintf(stderr, "\t-I, --interactive-identity\n");
-	fprintf(stderr, "\t\t\t\tSame as -i but prior to engaging interactive selection, reverts all Coordinate Transformation Matrices to identity and attempts to restore them afterwards.\n");
-	fprintf(stderr, "\t-f, --full\t\tUse the full screen area.\n");
-	fprintf(stderr, "\t--dry\t\t\tOutput the \"Coordinate Transformation Matrix\" instead of setting it.\n");
-	fprintf(stderr, "\nAlignment Control:\n");
-	fprintf(stderr, "\t-H, --horiztontal left|center|right\n");
-	fprintf(stderr, "\t\t\t\tAlign input region horizontally (Default: left).\n");
-	fprintf(stderr, "\t-V, --vertical top|center|bottom\n");
-	fprintf(stderr, "\t\t\t\tAlign input region vertically (Default: top).\n");
-	fprintf(stderr, "\t-t, --top\t\tAlign input region to top of screen.\n");
-	fprintf(stderr, "\t-l, --left\t\tAlign input region to left of screen.\n");
-	fprintf(stderr, "\t-b, --bottom\t\tAlign input region to bottom of screen.\n");
-	fprintf(stderr, "\t-r, --right\t\tAlign input region to right of screen.\n");
-	fprintf(stderr, "\nScaling Control:\n");
-	fprintf(stderr, "\t-o, --one\t\tAttempt to discover device and monitor size such that one centimeter on the device corresponds to a centimeter on the monitor.\n");
-	fprintf(stderr, "\t-w, --match-width\tScale input region to match width of target region.\n");
-	fprintf(stderr, "\t-H, --match-height\tScale input region to match height of target region.\n");
-	fprintf(stderr, "\t--fit\t\t\tScale input region to completely contain target region (Default).\n");
+	fprintf(file, "\t-d DEVICEID, --device DEVICEID\n");
+	fprintf(file, "\t\t\t\tSpecify the XID of the XInput2 device to modify.\n");
+	fprintf(file, "\t-c CRTCID, --device CRTCID\n");
+	fprintf(file, "\t\t\t\tThe CRTC to restrict the device to.\n");
+	fprintf(file, "\t-i, --interactive\tInteractively determine the monitor and input device to use.\n");
+	fprintf(file, "\t-I, --interactive-identity\n");
+	fprintf(file, "\t\t\t\tSame as -i but prior to engaging interactive selection, reverts all Coordinate Transformation Matrices to identity and attempts to restore them afterwards.\n");
+	fprintf(file, "\t-f, --full\t\tUse the full screen area.\n");
+	fprintf(file, "\t--dry\t\t\tOutput the \"Coordinate Transformation Matrix\" instead of setting it.\n");
+	fprintf(file, "\nAlignment Control:\n");
+	fprintf(file, "\t-H, --horiztontal left|center|right\n");
+	fprintf(file, "\t\t\t\tAlign input region horizontally (Default: left).\n");
+	fprintf(file, "\t-V, --vertical top|center|bottom\n");
+	fprintf(file, "\t\t\t\tAlign input region vertically (Default: top).\n");
+	fprintf(file, "\t-t, --top\t\tAlign input region to top of screen.\n");
+	fprintf(file, "\t-l, --left\t\tAlign input region to left of screen.\n");
+	fprintf(file, "\t-b, --bottom\t\tAlign input region to bottom of screen.\n");
+	fprintf(file, "\t-r, --right\t\tAlign input region to right of screen.\n");
+	fprintf(file, "\nScaling Control:\n");
+	fprintf(file, "\t-o, --one\t\tAttempt to discover device and monitor size such that one centimeter on the device corresponds to a centimeter on the monitor.\n");
+	fprintf(file, "\t-w, --match-width\tScale input region to match width of target region.\n");
+	fprintf(file, "\t-H, --match-height\tScale input region to match height of target region.\n");
+	fprintf(file, "\t--fit\t\t\tScale input region to completely contain target region (Default).\n");
 }
 
 #define PARSE_NONE      0
@@ -61,7 +61,7 @@ void print_usage(char * cmd) {
 
 int main(int argc, char ** argv) {
 	if (argc < 2) {
-		print_usage(argv[0]);
+		print_usage(stderr, argv[0]);
 		return -1;
 	}
 
@@ -87,27 +87,27 @@ int main(int argc, char ** argv) {
 		if (strcmp(argv[i], "-d") == 0 || strcmp(argv[i], "--device") == 0) {
 			char * invalid;
 			if (++i >= argc) {
-				print_usage(argv[0]);
+				print_usage(stderr, argv[0]);
 				return -1;
 			}
 
 			device_id = strtol(argv[i], &invalid, 10);
 			if (invalid && *invalid != '\0') {
 				fprintf(stderr, "Failed to parse device id \"%s\".\n", argv[i]);
-				print_usage(argv[0]);
+				print_usage(stderr, argv[0]);
 				return -1;
 			}
 		} else if (strcmp(argv[i], "-c") == 0 || strcmp(argv[i], "--crtc") == 0) {
 			char * invalid;
 			if (++i >= argc) {
-				print_usage(argv[0]);
+				print_usage(stderr, argv[0]);
 				return -1;
 			}
 
 			crtc_index = strtol(argv[i], &invalid, 10);
 			if (invalid && *invalid != '\0') {
 				fprintf(stderr, "Failed to parse crtc index \"%s\".\n", argv[i]);
-				print_usage(argv[0]);
+				print_usage(stderr, argv[0]);
 				return -1;
 			}
 		} else if (strcmp(argv[i], "--dry") == 0) {
@@ -124,7 +124,7 @@ int main(int argc, char ** argv) {
 			config.affinity.horizontal = HA_Right;
 		} else if (strcmp(argv[i], "-H") == 0 || strcmp(argv[i], "--horizontal") == 0) {
 			if (++i >= argc) {
-				print_usage(argv[0]);
+				print_usage(stderr, argv[0]);
 				return -1;
 			}
 
@@ -136,12 +136,12 @@ int main(int argc, char ** argv) {
 				config.affinity.horizontal = HA_Right;
 			} else {
 				fprintf(stderr, "Unknown horizontal alignment \"%s\".\n", argv[i]);
-				print_usage(argv[0]);
+				print_usage(stderr, argv[0]);
 				return -1;
 			}
 		} else if (strcmp(argv[i], "-V") == 0 || strcmp(argv[i], "--vertical") == 0) {
 			if (++i >= argc) {
-				print_usage(argv[0]);
+				print_usage(stderr, argv[0]);
 				return -1;
 			}
 
@@ -153,7 +153,7 @@ int main(int argc, char ** argv) {
 				config.affinity.vertical = VA_Bottom;
 			} else {
 				fprintf(stderr, "Unknown vertical alignment \"%s\".\n", argv[i]);
-				print_usage(argv[0]);
+				print_usage(stderr, argv[0]);
 				return -1;
 			}
 		} else if (strcmp(argv[i], "--fit") == 0) {
@@ -170,8 +170,11 @@ int main(int argc, char ** argv) {
 		} else if (strcmp(argv[i], "-o") == 0 || strcmp(argv[i], "--one") == 0) {
 			one_to_one = true;
 			config.type = CTM_None;
+		} else if (strcmp(argv[i], "-h") == 0 || strcmp(argv[i], "--help") == 0) {
+			print_usage(stdout, argv[0]);
+			return 0;
 		} else {
-			print_usage(argv[0]);
+			print_usage(stderr, argv[0]);
 			return -1;
 		}
 	}
@@ -315,7 +318,7 @@ int main(int argc, char ** argv) {
 
 	if (device_id < 0) {
 		fprintf(stderr, "DEVICEID must be a positive integer\n");
-		print_usage(argv[0]);
+		print_usage(stderr, argv[0]);
 		return -1;
 	}
 
