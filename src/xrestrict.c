@@ -40,9 +40,9 @@ void print_usage(FILE * file, char * cmd) {
 	fprintf(file, "\t-f, --full\t\tUse the full screen area.\n");
 	fprintf(file, "\t--dry\t\t\tOutput the \"Coordinate Transformation Matrix\" instead of setting it.\n");
 	fprintf(file, "\nAlignment Control:\n");
-	fprintf(file, "\t-H, --horiztontal left|center|right\n");
+	fprintf(file, "\t-X, --horiztontal left|center|right\n");
 	fprintf(file, "\t\t\t\tAlign input region horizontally (Default: left).\n");
-	fprintf(file, "\t-V, --vertical top|center|bottom\n");
+	fprintf(file, "\t-Y, --vertical top|center|bottom\n");
 	fprintf(file, "\t\t\t\tAlign input region vertically (Default: top).\n");
 	fprintf(file, "\t-t, --top\t\tAlign input region to top of screen.\n");
 	fprintf(file, "\t-l, --left\t\tAlign input region to left of screen.\n");
@@ -122,7 +122,7 @@ int main(int argc, char ** argv) {
 			config.affinity.horizontal = HA_Left;
 		} else if (strcmp(argv[i], "-r") == 0 || strcmp(argv[i], "--right") == 0) {
 			config.affinity.horizontal = HA_Right;
-		} else if (strcmp(argv[i], "-H") == 0 || strcmp(argv[i], "--horizontal") == 0) {
+		} else if (strcmp(argv[i], "-X") == 0 || strcmp(argv[i], "--horizontal") == 0) {
 			if (++i >= argc) {
 				print_usage(stderr, argv[0]);
 				return -1;
@@ -139,7 +139,7 @@ int main(int argc, char ** argv) {
 				print_usage(stderr, argv[0]);
 				return -1;
 			}
-		} else if (strcmp(argv[i], "-V") == 0 || strcmp(argv[i], "--vertical") == 0) {
+		} else if (strcmp(argv[i], "-Y") == 0 || strcmp(argv[i], "--vertical") == 0) {
 			if (++i >= argc) {
 				print_usage(stderr, argv[0]);
 				return -1;
