@@ -47,11 +47,11 @@ On Ubuntu 14.04 the above dependencies correspond to the following packages:
 
 in addition to the basic packages required to build most software, and git to retrieve the source:
 
-    build-essential autoconf automake git-core
+    build-essential autoconf automake git-core pkg-config
 
 From the console, a user may install all of these at once with the command:
 
-    sudo apt-get install build-essential autoconf automake libx11-dev libxi-dev libxrandr-dev
+    sudo apt-get install build-essential autoconf automake pkg-config libx11-dev libxi-dev libxrandr-dev
 
 ### openSUSE
 On openSUSE 13.2 the above dependencies correspond to the following packages:
